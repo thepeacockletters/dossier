@@ -6,7 +6,6 @@ import { JOB_SOURCES, JSEARCH_HOSTS } from "@/lib/job-search/search";
 import { DEFAULT_SECTION_LAYOUT, sectionLayoutSchema } from "@/lib/resume-sections";
 import { setupGuideSchema } from "@/lib/setup-guide";
 import { SCORERS } from "@/lib/scoring/scorers";
-import { startupsRefreshSchema } from "@/lib/startups/types";
 import { AGENT_MAX_SOURCE_REQUESTS_PER_DAY } from "@/lib/agent/limits";
 
 /** Date styles for documents (SET-6), labelled with an example as in the prototype. */
@@ -188,11 +187,6 @@ export const settingsSchema = z.object({
   agentAutoDraft: flag(false),
   /** The latest runs, newest first. They belong to the install: exports leave them out (INSTALL_SETTINGS). */
   agentRuns: json(z.array(agentRunSchema)).catch([]),
-  // Startups (#222): when the screen was last opened, since the daily refresh
-  // only runs while it's in use, and what the last refresh found. They belong
-  // to the install, not its data, so exports leave them out (INSTALL_SETTINGS).
-  startupsViewedAt: z.iso.datetime().nullable().catch(null),
-  startupsLastRefresh: json(startupsRefreshSchema).nullable().catch(null),
   /** "Check for updates daily" in Settings → About (update-check.ts). */
   updateCheck: flag(true),
   // The newest release the update check has seen, the UTC day it last

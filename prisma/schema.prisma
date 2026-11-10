@@ -521,8 +521,6 @@ model Application {
   posting             Posting?
   /// The agent candidate it was prepared from (E16).
   agentCandidate      AgentCandidate?
-  /// The startup it was started from on Startups, if any (#222).
-  startup             Startup?
   /// Mail sent and received about it through Gmail (E15-3).
   emails              EmailMessage[]
   events              StatusEvent[]
@@ -828,80 +826,6 @@ model PostingSearch {
   updatedAt DateTime      @updatedAt
 
   @@index([createdAt])
-}
-
-// ─── Startups (#222) ─────────────────────────────────────────────────────────
-
-/// Where a startup stands on the Startups screen.
-enum StartupStatus {
-  NEW
-  SAVED
-  CONTACTED
-  DISMISSED
-}
-
-/// A startup that's hiring (#222): a YC startup's job post on Hacker News, or
-/// a post in Hacker News' monthly "Who is hiring?" thread, with the addresses
-/// it publishes for applications and how well it fits the profile. Kept
-/// with what the user did with it; untouched ones go once no refresh finds
-/// them for a while.
-model Startup {
-  id                 String        @id @default(cuid())
-  /// Where it was found: "YC" (YC's job posts) or "HN" ("Who is hiring?").
-  source             String
-  /// The Hacker News item's id.
-  externalId         String
-  company            String
-  /// The company's own site, "" when unknown.
-  website            String        @default("")
-  /// The post's title, or its first line.
-  summary            String        @default("")
-  /// The post's text as published.
-  details            String        @default("")
-  location           String        @default("")
-  remote             Boolean?
-  /// e.g. "YC W24", or the round a post names.
-  stage              String        @default("")
-  /// JSON list of strings: the roles a post names.
-  roles              Json
-  /// JSON list of { email, label, from, onRequest, foundAt }: only addresses
-  /// the startup published, never guessed. People's own addresses are
-  /// looked up only when asked, and dropped after a while unless used.
-  emails             Json
-  /// JSON list of { label, url }.
-  links              Json
-  /// When it was posted.
-  postedAt           DateTime?
-  /// 0–100: how well it fits the profile, with why (JSON list of strings).
-  score              Int           @default(0)
-  reasons            Json
-  /// The matching's version, e.g. "match@1".
-  scoredWith         String        @default("")
-  status             StartupStatus @default(NEW)
-  /// Where its site says it takes no unsolicited applications; "" when it doesn't.
-  noApplicationsFrom String        @default("")
-  /// When its site was last checked for role addresses, and for people's.
-  emailsCheckedAt    DateTime?
-  peopleCheckedAt    DateTime?
-  notes              String        @default("")
-  /// When a refresh last found it.
-  seenAt             DateTime      @default(now())
-  /// The application started from it ("Write to them"); deleting the application keeps the startup.
-  applicationId      String?       @unique
-  application        Application?  @relation(fields: [applicationId], references: [id], onDelete: SetNull)
-  createdAt          DateTime      @default(now())
-  updatedAt          DateTime      @updatedAt
-
-  @@unique([source, externalId])
-  @@index([status, score])
-}
-
-/// A startup removed with "Remove and don't bring back" (#222): only a
-/// SHA-256 hash of its post, its site's domain or its name, so a refresh
-/// leaves it out without keeping anything about it.
-model StartupBlock {
-  hash      String   @id
-  createdAt DateTime @default(now())
 }
 
 // ─── Google: Gmail and Calendar (E15) ────────────────────────────────────────

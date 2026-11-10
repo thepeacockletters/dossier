@@ -44,7 +44,7 @@ export type ApplicationReading = {
  * saves through the connector (#221), where one call makes one application.
  */
 export type ApplicationClaim =
-  | { kind: "manual"; writeJobId: string; readJobId: string; postingId: string | null; startupId?: string | null }
+  | { kind: "manual"; writeJobId: string; readJobId: string; postingId: string | null }
   | { kind: "agent"; candidateId: string; score: number }
   | { kind: "connector"; postingId: string | null };
 
@@ -175,10 +175,6 @@ export async function createApplicationFromDocuments({ reading, documents, match
       // The posting it came from shows it as applied for (E14-8); one already linked keeps its application.
       if (claim.postingId) {
         await tx.posting.updateMany({ where: { id: claim.postingId, applicationId: null }, data: { applicationId: application.id } });
-      }
-      // The startup it was written to (#222): it counts as contacted once the application is sent.
-      if (claim.startupId) {
-        await tx.startup.updateMany({ where: { id: claim.startupId, applicationId: null }, data: { applicationId: application.id } });
       }
     } else if (claim.kind === "agent") {
       await tx.agentCandidate.update({ where: { id: claim.candidateId }, data: { applicationId: application.id } });

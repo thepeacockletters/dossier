@@ -69,8 +69,6 @@ function omit<T extends object, K extends keyof T>(value: T, ...keys: K[]): Omit
 }
 
 const json = (value: unknown) => (value === null || value === undefined ? Prisma.DbNull : (value as Prisma.InputJsonValue));
-/** A JSON list for a column that can't be null (#222): anything else reads as empty. */
-const jsonList = (value: unknown) => (Array.isArray(value) ? value : []) as Prisma.InputJsonValue;
 
 /**
  * Replaces all user data with the export's, in one transaction. Each saved
@@ -80,7 +78,7 @@ const jsonList = (value: unknown) => (Array.isArray(value) ? value : []) as Pris
  * settings (the usage ping's) stay as they are.
  */
 export async function importExport(db: PrismaClient, data: DossierExport): Promise<void> {
-  const { profile, themes, settings, applications, postings, searches, agentCandidates, startups, startupBlocks, apiKey, jobSourceKeys } = data;
+  const { profile, themes, settings, applications, postings, searches, agentCandidates, apiKey, jobSourceKeys } = data;
   const fromFile: Record<string, string | null> = {
     apiKeyEnc: apiKey ? encryptApiKey(apiKey) : null,
     jsearchKeyEnc: jobSourceKeys?.jsearch ? encryptSecret(JOB_SOURCE_KEY, jobSourceKeys.jsearch) : null,
@@ -110,8 +108,6 @@ export async function importExport(db: PrismaClient, data: DossierExport): Promi
       await tx.postingSearch.deleteMany();
       await tx.agentCandidate.deleteMany();
       await tx.agentSearch.deleteMany();
-      await tx.startup.deleteMany();
-      await tx.startupBlock.deleteMany();
       // Scores of postings (#208) belong to the profile being replaced; they're left out of exports, since they can be made again.
       await tx.postingScore.deleteMany();
       // Mail from Gmail belongs to the applications being replaced; the next check fetches what's still relevant.
@@ -231,18 +227,6 @@ export async function importExport(db: PrismaClient, data: DossierExport): Promi
           ...link, searchId: link.searchId && searchIds.has(link.searchId) ? link.searchId : null,
         })),
       });
-      // Startups (#222) with what the user did with them; an application that isn't in the file leaves one unlinked.
-      await tx.startup.createMany({
-        data: startups.map((startup) => ({
-          ...startup,
-          roles: jsonList(startup.roles),
-          emails: jsonList(startup.emails),
-          links: jsonList(startup.links),
-          reasons: jsonList(startup.reasons),
-          applicationId: startup.applicationId && applicationIds.has(startup.applicationId) ? startup.applicationId : null,
-        })),
-      });
-      await tx.startupBlock.createMany({ data: [...new Map(startupBlocks.map((block) => [block.hash, block])).values()] });
     },
     // A big export takes longer than the default five seconds.
     { timeout: 120_000, maxWait: 10_000 },

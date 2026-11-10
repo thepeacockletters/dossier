@@ -64,19 +64,15 @@ export type Draft = {
   writeJobId: string | null;
   /** The Find jobs posting it was started from (E14-8); missing in drafts from before. */
   postingId?: string | null;
-  /** The startup it was started from with "Write to them" (#222). */
-  startupId?: string | null;
   /** "Score it" (public issue 66): the job scoring the posting, and its score; missing in drafts from before. */
   scoreJobId?: string | null;
   score?: PostingFit | null;
 };
 
-/** A posting handed over by "Start application" on Find jobs (E14-8), or by "Write to them" on Startups (#222). */
+/** A posting handed over by "Start application" on Find jobs (E14-8). */
 export type FromPosting = {
-  /** The Find jobs posting; null for a startup. */
-  id: string | null;
-  /** The startup and its name, from Startups. */
-  startup?: { id: string; company: string };
+  /** The Find jobs posting. */
+  id: string;
   text: string;
   url: string;
   /** False when only the start of the posting came through. */
@@ -203,13 +199,11 @@ export function NewApplication({
   // application" would, at the paste step, to check before reading it.
   useEffect(() => {
     if (!fromPosting) return;
-    draftStore?.set({ ...initial, posting: fromPosting.text, postingUrl: fromPosting.url, postingId: fromPosting.id, startupId: fromPosting.startup?.id ?? null });
+    draftStore?.set({ ...initial, posting: fromPosting.text, postingUrl: fromPosting.url, postingId: fromPosting.id });
     toast(
-      fromPosting.startup
-        ? `Here's what Startups knows about ${fromPosting.startup.company}, without its addresses. Add the role you're after if it doesn't say, then read it.`
-        : fromPosting.complete
-          ? "Here's the posting from Find jobs. Check it, then read it."
-          : "Only the start of this posting came through. Paste the rest from the posting's page, then read it.",
+      fromPosting.complete
+        ? "Here's the posting from Find jobs. Check it, then read it."
+        : "Only the start of this posting came through. Paste the rest from the posting's page, then read it.",
     );
     router.replace("/new");
   }, [fromPosting, initial, router]);
@@ -324,7 +318,6 @@ export function NewApplication({
       details: draft.details,
       postingUrl: draft.postingUrl,
       postingId: draft.postingId ?? null,
-      startupId: draft.startupId ?? null,
     });
     saving.current = false;
     if (!result.ok) {

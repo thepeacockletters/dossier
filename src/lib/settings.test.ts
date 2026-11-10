@@ -76,8 +76,6 @@ describe("stored settings", () => {
       agentMaxDrafts: 3,
       agentAutoDraft: false,
       agentRuns: [],
-      startupsViewedAt: null,
-      startupsLastRefresh: null,
       updateCheck: true,
       latestVersion: null,
       latestVersionUrl: null,

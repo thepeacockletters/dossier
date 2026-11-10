@@ -212,38 +212,6 @@ describe("importExport (E10-6)", () => {
     expect(await prisma().application.findUniqueOrThrow({ where: { id: draft.id } })).toMatchObject({ origin: "MANUAL", awaitingReview: false });
   });
 
-  it("restores Startups with what the user did with them, and reads files from before them as having none (#222)", async () => {
-    const application = await prisma().application.create({ data: { title: "Android · Acme" } });
-    const emails = [{ email: "jobs@acme.example", label: "Hiring", from: "https://acme.example/careers", onRequest: false, foundAt: "2026-10-01T00:00:00.000Z" }];
-    await prisma().startup.create({
-      data: { source: "HN", externalId: "1", company: "Acme", roles: ["Engineer"], emails, links: [], reasons: ["In Berlin"], status: "SAVED", notes: "Ask about Compose", applicationId: application.id },
-    });
-    await prisma().startup.create({ data: { source: "YC", externalId: "2", company: "Gone", roles: [], emails: [], links: [], reasons: [], status: "DISMISSED" } });
-    await prisma().startupBlock.create({ data: { hash: "b".repeat(64) } });
-    const select = { externalId: true, status: true, notes: true, emails: true, roles: true, applicationId: true } as const;
-    const before = await prisma().startup.findMany({ orderBy: { externalId: "asc" }, select });
-    const file = await asFile();
-    expect(file.startups).toHaveLength(2);
-
-    await importExport(prisma(), file);
-    expect(await prisma().startup.findMany({ orderBy: { externalId: "asc" }, select })).toEqual(before);
-    expect(await prisma().startupBlock.count()).toBe(1);
-
-    // An application that isn't in the file leaves its startup unlinked; older files have no startups.
-    const unlinked = JSON.parse(JSON.stringify(file));
-    unlinked.applications = unlinked.applications.filter((entry: { id: string }) => entry.id !== application.id);
-    await importExport(prisma(), exportSchema.parse(unlinked));
-    expect((await prisma().startup.findFirstOrThrow({ where: { externalId: "1" } })).applicationId).toBeNull();
-    const older = JSON.parse(JSON.stringify(file));
-    delete older.startups;
-    delete older.startupBlocks;
-    const parsed = parseExport(JSON.stringify(older));
-    expect(parsed).toMatchObject({ ok: true, data: { startups: [], startupBlocks: [] } });
-    if (!parsed.ok) return;
-    await importExport(prisma(), parsed.data);
-    expect(await prisma().startup.count()).toBe(0);
-  });
-
   it("reads files from before projects as having none (PRO-13)", async () => {
     const file = JSON.parse(JSON.stringify(await buildExport(prisma(), { now })));
     const parsed = parseExport(JSON.stringify({ ...file, schemaVersion: 2, profile: { ...file.profile, projects: undefined } }));

@@ -157,11 +157,6 @@ const schema = z.object({
   DOSSIER_PUBLIC_URL: optional(
     z.url({ protocol: /^https?$/, error: "DOSSIER_PUBLIC_URL must be an http:// or https:// URL." }).transform((url) => url.replace(/\/+$/, "")),
   ),
-  // For the end-to-end tests only: sends every job source's requests to
-  // <url>/<source> instead, where a fake source answers (e2e/fake-jobs.mts).
-  DOSSIER_JOBS_TEST_BASE_URL: optional(
-    z.url({ protocol: /^https?$/, error: "DOSSIER_JOBS_TEST_BASE_URL must be an http:// or https:// URL." }),
-  ),
   // Where the project's backend is (announcements/check.ts), when it isn't
   // the real one: for development against a local copy.
   DOSSIER_API_URL: optional(

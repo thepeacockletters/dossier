@@ -155,14 +155,6 @@ describe("createApplication", () => {
     expect(await prisma().posting.findUniqueOrThrow({ where: { id: posting.id } })).toMatchObject({ applicationId: result.ok ? result.data : "" });
   });
 
-  it("links the startup it was written to from Startups (#222)", async () => {
-    await finishedJobs();
-    const startup = await prisma().startup.create({ data: { source: "HN", externalId: "1", company: "Ledgerly", roles: [], emails: [], links: [], reasons: [] } });
-    const result = await createApplication({ writeJobId: "write-job", details, postingUrl: "", startupId: startup.id });
-    expect(result.ok).toBe(true);
-    expect(await prisma().startup.findUniqueOrThrow({ where: { id: startup.id } })).toMatchObject({ applicationId: result.ok ? result.data : "", status: "NEW" });
-  });
-
   it("leaves a posting that already has an application, and one that's gone, alone", async () => {
     await finishedJobs();
     const earlier = await prisma().application.create({ data: { title: "Applied before" } });

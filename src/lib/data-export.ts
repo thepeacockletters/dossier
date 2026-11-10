@@ -20,7 +20,6 @@ import {
   PhotoShape,
   PostingSource,
   SidebarStyle,
-  StartupStatus,
   ThemeAlign,
   ThemeFont,
   ThemeLayout,
@@ -35,8 +34,7 @@ import { appVersion } from "@/lib/version";
 // Everything a user keeps in Dossier as one JSON file (E10-4, SET-10): the
 // profile, custom themes, settings and applications with their history,
 // documents, chat and notes, the postings kept from Find jobs (E14-9) and
-// the job agent's candidates (E16), so its dedupe survives a restore, and
-// Startups with what the user did with them (#222).
+// the job agent's candidates (E16), so its dedupe survives a restore.
 // IDs are kept, so an import restores every link. Jobs, sign-in throttling,
 // built-in themes, the Google account and the mail fetched from Gmail stay
 // behind: they belong to the server or the mailbox, not the user's data.
@@ -62,9 +60,6 @@ export const INSTALL_SETTINGS: readonly string[] = [
   "setupGuide",
   // The job agent's runs count against this server's job source key (E16).
   "agentRuns",
-  // When Startups was last opened and what its last refresh found (#222).
-  "startupsViewedAt",
-  "startupsLastRefresh",
   "latestVersion",
   "latestVersionUrl",
   "updateCheckDay",
@@ -316,36 +311,6 @@ const agentCandidateSearch = z.object({
   id: text.min(1), candidateId: text.min(1), searchId: text.min(1).nullable(), searchName: text, createdAt: date,
 });
 
-/** A startup from Startups (#222), with the addresses it publishes and what the user did with it. */
-const startup = z.object({
-  id: text,
-  source: text,
-  externalId: text,
-  company: text,
-  website: text,
-  summary: text,
-  details: text,
-  location: text,
-  remote: z.boolean().nullable(),
-  stage: text,
-  roles: z.unknown().nullable(),
-  emails: z.unknown().nullable(),
-  links: z.unknown().nullable(),
-  postedAt: optionalDate,
-  score: int,
-  reasons: z.unknown().nullable(),
-  scoredWith: text,
-  status: z.enum(StartupStatus),
-  noApplicationsFrom: text,
-  emailsCheckedAt: optionalDate,
-  peopleCheckedAt: optionalDate,
-  notes: text,
-  seenAt: date,
-  applicationId: text.nullable(),
-  createdAt: date,
-  updatedAt: date,
-});
-
 /** A posting kept from Find jobs (E14-5). */
 const posting = z.object({
   id: text,
@@ -419,9 +384,6 @@ export const exportSchema = z.object({
   agentCandidates: z.array(agentCandidate).default([]),
   agentSearches: z.array(agentSearch).max(MAX_AGENT_SEARCHES, "Keep at most three Agent searches.").default([]),
   agentCandidateSearches: z.array(agentCandidateSearch).default([]),
-  /** Startups (#222), and hashes of the ones removed for good; absent in older files. */
-  startups: z.array(startup).default([]),
-  startupBlocks: z.array(z.object({ hash: text, createdAt: date })).default([]),
 });
 export type DossierExport = z.infer<typeof exportSchema>;
 
@@ -443,7 +405,7 @@ export async function buildExport(
   { includeApiKey = false, now = new Date() }: { includeApiKey?: boolean; now?: Date } = {},
 ): Promise<DossierExport> {
   return db.$transaction(async (tx) => {
-    const [fields, skills, languages, experience, projects, education, certifications, customSections, publications, references, facts, themes, settings, applications, postings, searches, agentCandidates, agentSearches, agentCandidateSearches, startups, startupBlocks] = await Promise.all([
+    const [fields, skills, languages, experience, projects, education, certifications, customSections, publications, references, facts, themes, settings, applications, postings, searches, agentCandidates, agentSearches, agentCandidateSearches] = await Promise.all([
       tx.profileField.findMany({ select: { key: true, value: true }, orderBy: { key: "asc" } }),
       tx.skill.findMany({ select: { id: true, name: true, sort: true, group: true, createdAt: true }, orderBy: { createdAt: "asc" } }),
       tx.language.findMany({ select: { id: true, name: true, level: true, sort: true, createdAt: true }, orderBy: { createdAt: "asc" } }),
@@ -478,8 +440,6 @@ export async function buildExport(
       tx.agentCandidate.findMany({ orderBy: { createdAt: "asc" } }),
       tx.agentSearch.findMany({ orderBy: [{ sort: "asc" }, { createdAt: "asc" }] }),
       tx.agentCandidateSearch.findMany({ orderBy: { createdAt: "asc" } }),
-      tx.startup.findMany({ orderBy: { createdAt: "asc" } }),
-      tx.startupBlock.findMany({ orderBy: { createdAt: "asc" } }),
     ]);
 
     // Keys only when asked for, decrypted; one that's unreadable here too (DOSSIER_SECRET changed) has nothing to export.
@@ -527,8 +487,6 @@ export async function buildExport(
       agentCandidates,
       agentSearches: agentSearches.map((search) => ({ ...search, ...agentSearchInputSchema.parse(search) })),
       agentCandidateSearches,
-      startups,
-      startupBlocks,
     };
   });
 }

@@ -133,13 +133,11 @@ describe("the Bundesagentur für Arbeit (#223)", () => {
 });
 
 describe("requestContext", () => {
-  it("leaves sources at their own address, unless the end-to-end tests point them at a fake", () => {
+  it("leaves sources at their own address, unless FreeHire is self-hosted", () => {
     expect(requestContext("JSEARCH", undefined)).toEqual({});
-    expect(requestContext("ADZUNA", "http://127.0.0.1:3998/")).toEqual({ baseUrl: "http://127.0.0.1:3998/adzuna" });
-    expect(requestContext("FREEHIRE", undefined, "https://jobs.example")).toEqual({ baseUrl: "https://jobs.example" });
-    expect(requestContext("FREEHIRE", "http://127.0.0.1:3998/", "https://jobs.example")).toEqual({
-      baseUrl: "http://127.0.0.1:3998/freehire",
-    });
+    expect(requestContext("ADZUNA", "https://jobs.example")).toEqual({});
+    expect(requestContext("FREEHIRE", undefined)).toEqual({});
+    expect(requestContext("FREEHIRE", "https://jobs.example")).toEqual({ baseUrl: "https://jobs.example" });
   });
 });
 

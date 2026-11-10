@@ -132,10 +132,8 @@ export const createApplication = action(
     postingUrl: z.string().max(2000),
     /** The Find jobs posting it was started from (E14-8). */
     postingId: z.string().min(1).max(100).nullish(),
-    /** The startup it was started from on Startups (#222). */
-    startupId: z.string().min(1).max(100).nullish(),
   }),
-  async ({ writeJobId, details, postingUrl, postingId, startupId }) => {
+  async ({ writeJobId, details, postingUrl, postingId }) => {
     const job = await prisma.job.findUnique({ where: { id: writeJobId } });
     if (!job || job.type !== writeDocumentsJob.type || job.status !== JobStatus.DONE) {
       throw new ActionError("Those documents aren't ready. Try creating the application again.");
@@ -153,7 +151,7 @@ export const createApplication = action(
       postingUrl: postingLink(postingUrl),
       tone: input.tone,
       note: input.note,
-      claim: { kind: "manual", writeJobId, readJobId: input.readJobId, postingId: postingId ?? null, startupId: startupId ?? null },
+      claim: { kind: "manual", writeJobId, readJobId: input.readJobId, postingId: postingId ?? null },
     });
   },
 );

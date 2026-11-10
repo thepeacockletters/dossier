@@ -112,16 +112,10 @@ export function jobSearchView(config: JobSearchConfig): JobSearchSettingsView {
 }
 
 /**
- * Where a source's requests go: its own address, unless the end-to-end
- * tests point every source at their fake one (DOSSIER_JOBS_TEST_BASE_URL),
- * or FreeHire is pointed at a self-hosted origin (DOSSIER_FREEHIRE_URL).
+ * Where a source's requests go: its own address, unless FreeHire is pointed
+ * at a self-hosted origin (DOSSIER_FREEHIRE_URL).
  */
-export function requestContext(
-  source: JobSource,
-  base = env.DOSSIER_JOBS_TEST_BASE_URL,
-  freehireUrl = env.DOSSIER_FREEHIRE_URL,
-): RequestContext {
-  if (base) return { baseUrl: `${base.replace(/\/+$/, "")}/${source.toLowerCase()}` };
+export function requestContext(source: JobSource, freehireUrl = env.DOSSIER_FREEHIRE_URL): RequestContext {
   if (source === "FREEHIRE" && freehireUrl) return { baseUrl: freehireUrl };
   return {};
 }
