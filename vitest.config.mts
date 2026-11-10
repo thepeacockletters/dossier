@@ -24,7 +24,7 @@ export default defineConfig({
     maxWorkers: "50%",
     // `yarn test:coverage` (E11-1). The thresholds ratchet (decided 28
     // September 2026): a few points below the coverage when they were set.
-    // Raise them as tests are added; CI fails when coverage drops below.
+    // Raise them as tests are added; `yarn test:coverage` fails below them.
     coverage: {
       provider: "v8",
       include: ["src/**"],

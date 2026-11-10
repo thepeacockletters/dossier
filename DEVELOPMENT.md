@@ -253,7 +253,7 @@ Put tests next to the code they cover. `*.test.ts` files run in Node (server cod
 `*.db.test.ts` files run against a real database: the file next to `DATABASE_URL`'s with `_test` added to its name (`data/dossier_test.db`), or `TEST_DATABASE_URL`, which is created and migrated at the start of each run, and which each test empties with `resetDatabase()` from `src/test/db.ts`.
 They refuse to run against a file whose name doesn't end in `_test`, so your development data is never touched.
 
-GitHub Actions (`.github/workflows/ci.yml`) runs lint, type-check and tests with coverage, on release branches (`release/1.12.0`), when one is pushed and on each push after that, and shows the coverage in the job summary. A newer push to the same branch cancels the run it replaces. Nothing else runs them: pull requests aren't checked, so run the checks yourself before you open one. The public repository has no release branches: `image.yml` runs the same jobs there after each merge or publish to `main`, before it builds the image. The coverage thresholds in `vitest.config.mts` ratchet: they sit a few points below the coverage when they were set, and CI fails if coverage drops below them. Raise them when you add tests.
+The coverage thresholds in `vitest.config.mts` ratchet: they sit a few points below the coverage when they were set, and `yarn test:coverage` fails if coverage drops below them. Raise them when you add tests.
 
 ## The production image
 
@@ -263,14 +263,6 @@ The `Dockerfile` makes the production image. It holds the standalone Next.js ser
 docker build -t dossier:local .
 DOSSIER_IMAGE=dossier:local DOSSIER_PORT=3300 docker compose -f compose.production.yml -p dossier-local up -d
 ```
-
-In the public repository, `image.yml` pushes an image for every commit on `main` to `ghcr.io/<owner>/<repository>:<sha>` (lower case) once the checks pass. A version tag (`v1.0.0`) then tags that commit's image with the version and `latest`.
-
-## The website
-
-`site/` is the project's website, plain HTML, CSS and a little JavaScript. `site/build.sh` puts it together in `_site/` with the README's screenshots (`.github/images/`), the app's icons and three of its fonts, so there's one copy of each. To look at it, serve `_site/` with any static server, for example `npx serve _site`. The public repository's Pages workflow publishes it when any of those change on `main`, and once a day. When the README's screenshots change, the site's change with them.
-
-The number above the hero's buttons is the Docker image's download count. GitHub's API has no download counts for `ghcr.io`, so `build.sh` reads it from the package page (the `title` of the number under "Total downloads") and writes it into `_site/index.html`, rounded down. The daily run keeps it current. If the page can't be read (you're offline, or GitHub changed its markup), the build prints a warning and keeps the floor written in `site/index.html`. Raise that floor now and then, and update the `sed` in `build.sh` if the warning keeps coming.
 
 ## Reset
 
