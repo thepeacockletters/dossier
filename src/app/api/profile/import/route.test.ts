@@ -69,7 +69,7 @@ describe("POST /api/profile/import (E4-10)", () => {
   });
 
   it("refuses a file that's too big before reading it", async () => {
-    const response = await post(Buffer.from(resume), { "content-length": String(6 * 1024 * 1024) });
+    const response = await post(Buffer.from(resume), { "content-length": String(51 * 1024 * 1024) });
     expect(response.status).toBe(413);
     expect(await response.json()).toEqual({ error: RESUME_MESSAGES.tooBig });
   });

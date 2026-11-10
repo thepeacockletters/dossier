@@ -13,7 +13,7 @@ import { route } from "@/lib/route";
 /**
  * Restores from an export file (E10-6, SET-10), sent as the request body.
  * A route handler rather than a Server Action, whose body limit is 1 MB;
- * the proxy still caps bodies at 10 MB (see DEVELOPMENT.md). `?preview=1` only reads
+ * the proxy still caps bodies at 50 MB (see DEVELOPMENT.md). `?preview=1` only reads
  * the file and says what it would replace. Otherwise the current data is
  * backed up to DOSSIER_DATA_DIR/backups first, then replaced in one go.
  */

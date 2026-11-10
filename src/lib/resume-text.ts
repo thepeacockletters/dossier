@@ -5,15 +5,15 @@ import "server-only";
 // every AI provider can work with it, local models included (decided 29
 // September 2026).
 
-/** The largest file the import takes; resumes are rarely over 1 MB. */
-export const RESUME_MAX_BYTES = 5 * 1024 * 1024;
+/** The largest file the import takes: proxyClientMaxBodySize in next.config.ts. */
+export const RESUME_MAX_BYTES = 50 * 1024 * 1024;
 /** Enough for a long resume; the rest isn't sent to the model. */
 export const MAX_RESUME_CHARACTERS = 30_000;
 /** Below this, a file has no real text: usually a scanned PDF. */
 const MIN_CHARACTERS = 80;
 
 export const RESUME_MESSAGES = {
-  tooBig: "That file is over 5 MB. A resume is usually much smaller: export it again without images.",
+  tooBig: "That file is over 50 MB. Export your resume again without images.",
   wrongType: "Choose a PDF, a Word (.docx) or a Markdown (.md) file.",
   unreadable: "That file couldn't be read. Try exporting it from the program you wrote it in, as PDF or .docx.",
   noText: "There's no text in this file to read, so it's probably a scan. Export your resume from the program you wrote it in instead.",

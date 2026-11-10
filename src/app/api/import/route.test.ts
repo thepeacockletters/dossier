@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { getSession } from "@/lib/auth/session";
 import { writeBackup } from "@/lib/backups";
 import { importExport, parseExport } from "@/lib/data-import";
+import { IMPORT_MAX_BYTES } from "@/lib/import-limits";
 
 import { POST } from "./route";
 
@@ -64,7 +65,7 @@ describe("POST /api/import (E10-6)", () => {
 
   it("refuses a file over the size limit before reading it", async () => {
     vi.mocked(parseExport).mockClear();
-    const response = await post("", { "content-length": String(11 * 1024 * 1024) });
+    const response = await post("", { "content-length": String(IMPORT_MAX_BYTES + 1) });
     expect(response.status).toBe(413);
     expect(parseExport).not.toHaveBeenCalled();
   });
