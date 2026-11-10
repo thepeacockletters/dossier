@@ -24,12 +24,9 @@ const LINK = "font-medium text-ink underline underline-offset-2";
 export function ConnectorSection({
   initial,
   address,
-  inDesktopApp = false,
 }: {
   initial: { on: boolean; redirects: string[] };
   address: string;
-  /** On this computer, in the desktop app: an app's approval page opens in the browser, which the app signs in (#365). */
-  inDesktopApp?: boolean;
 }) {
   const track = useTrackSave();
   const [on, setOn] = useState(initial.on);
@@ -66,13 +63,6 @@ export function ConnectorSection({
         Use Dossier from AI apps that speak MCP: Claude, in chats on claude.ai, in the Desktop and mobile apps and in its command-line app, or another app such as
         n8n. They can search for jobs, read your profile and applications, and save the applications and fit scores they write. They never send or delete anything.
       </SettingsSectionIntro>
-
-      {inDesktopApp && (
-        <p className="text-meta text-muted">
-          On this computer, an app asks you to allow it in your browser. When it does, choose Help → Sign in my browser in this window, and the
-          browser carries on.
-        </p>
-      )}
 
       <Card padding="none" className="px-7 py-4">
         <Toggle

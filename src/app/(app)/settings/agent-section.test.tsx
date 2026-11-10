@@ -39,13 +39,6 @@ describe("Settings → Job agent", () => {
     expect(screen.getByText("Recurring searches (0/3)")).toBeInTheDocument();
   });
 
-  it("says on this computer that it only runs while Dossier is open (#325)", () => {
-    open({ initial: { ...initial, enabled: true }, onlyWhileOpen: true });
-    expect(screen.getByRole("switch", { name: "Run the job agent" })).toHaveAccessibleDescription(
-      /On this computer, only while Dossier is open: when it's closed at that hour, the run starts once you open it, the same day\.$/,
-    );
-  });
-
   it("allows duplicate names and distinguishes their accessible controls by position", async () => {
     const user = userEvent.setup();
     const second = { ...search, id: "two", sort: 1, query: { ...search.query, keywords: "Designer" } };

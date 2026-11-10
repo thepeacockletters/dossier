@@ -15,8 +15,8 @@ import { FREEHIRE_URL } from "./sources";
 // description. Radius isn't supported; place goes into `q` like JSearch,
 // which puts postings there first rather than leaving the rest out. Its
 // `cities` filter only knows its own spelling of a city, and with
-// `countries` it widens to the whole country. Self-host / e2e override the
-// origin via RequestContext.baseUrl.
+// `countries` it widens to the whole country. A self-hosted catalogue
+// overrides the origin via RequestContext.baseUrl.
 
 const SEARCH_PATH = "/api/v1/agent/jobs/search";
 const PAGE_SIZE = 20;

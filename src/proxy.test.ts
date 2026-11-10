@@ -136,12 +136,6 @@ describe("proxy", () => {
     expect((await proxy(request("/print/base?fit=1", { headers: { [PRINT_TOKEN_HEADER]: base } }))).status).toBe(307);
   });
 
-  it("lets the desktop app's sign-in reach its route, which checks the token, and nothing else under that path", async () => {
-    expect((await proxy(request("/api/desktop/sign-in"))).headers.get("x-middleware-next")).toBe("1");
-    expect((await proxy(request("/api/desktop/other"))).status).toBe(401);
-    expect((await proxy(request("/api/desktop/sign-in/more"))).status).toBe(401);
-  });
-
   it("refuses print tokens for another page, forged ones and tokens outside /print", async () => {
     const other = await signPrintToken("/print/resume/1");
     const forged = await signPrintToken("/print/base", "b".repeat(32));

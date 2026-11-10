@@ -162,36 +162,10 @@ const schema = z.object({
   DOSSIER_JOBS_TEST_BASE_URL: optional(
     z.url({ protocol: /^https?$/, error: "DOSSIER_JOBS_TEST_BASE_URL must be an http:// or https:// URL." }),
   ),
-  // For the end-to-end tests only: sends Google's sign-in, Gmail and Calendar
-  // requests to <url>/<host> instead, where a fake Google answers
-  // (e2e/fake-google.mts).
-  DOSSIER_GOOGLE_TEST_BASE_URL: optional(
-    z.url({ protocol: /^https?$/, error: "DOSSIER_GOOGLE_TEST_BASE_URL must be an http:// or https:// URL." }),
-  ),
-  // For the end-to-end tests only: sends the usage ping to <url> instead of
-  // the project's receiver (e2e/fake-jobs.mts answers).
-  DOSSIER_USAGE_PING_TEST_URL: optional(
-    z.url({ protocol: /^https?$/, error: "DOSSIER_USAGE_PING_TEST_URL must be an http:// or https:// URL." }),
-  ),
   // Where the project's backend is (announcements/check.ts), when it isn't
-  // the real one: for development against a local copy, and the end-to-end tests.
+  // the real one: for development against a local copy.
   DOSSIER_API_URL: optional(
     z.url({ protocol: /^https?$/, error: "DOSSIER_API_URL must be an http:// or https:// URL." }).transform((url) => url.replace(/\/+$/, "")),
-  ),
-  // Set by the desktop app on a server it starts: the token it signs in with
-  // for this launch (desktop.ts). Never set on a server otherwise.
-  DOSSIER_DESKTOP_TOKEN: optional(z.string()),
-  // And where it prints PDFs (pdf/desktop-print.ts), with its own Chromium.
-  DOSSIER_DESKTOP_PRINT_URL: optional(z.url({ protocol: /^https?$/, error: "DOSSIER_DESKTOP_PRINT_URL must be an http:// or https:// URL." })),
-  // For the end-to-end tests only: asks <url> for the latest release instead
-  // of GitHub's API (e2e/fake-jobs.mts answers).
-  DOSSIER_UPDATES_TEST_BASE_URL: optional(
-    z.url({ protocol: /^https?$/, error: "DOSSIER_UPDATES_TEST_BASE_URL must be an http:// or https:// URL." }),
-  ),
-  // For the end-to-end tests only: sends Jev's requests to <url> instead of
-  // TypeSafe's API (e2e/fake-jobs.mts answers).
-  DOSSIER_TYPESAFE_TEST_BASE_URL: optional(
-    z.url({ protocol: /^https?$/, error: "DOSSIER_TYPESAFE_TEST_BASE_URL must be an http:// or https:// URL." }),
   ),
 }).check((context) => {
   if (context.value.DOSSIER_JOBS_SOURCE === "arbeitsagentur" && context.value.DOSSIER_JOBS_ARBEITSAGENTUR === "off") {

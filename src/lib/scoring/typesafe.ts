@@ -3,7 +3,6 @@ import "server-only";
 import { z } from "zod";
 
 import { AiError } from "@/lib/ai/errors";
-import { env } from "@/lib/env";
 
 // TypeSafe's System One API (#274): typed questions about a `state`, answered
 // with scores and probabilities rather than text. Jev is its model. The key
@@ -116,7 +115,7 @@ export type AskOptions = {
  */
 export async function askJev(
   request: { state: unknown; questions: Record<string, Question> },
-  { key, signal, fetchImpl = fetch, baseUrl = env.DOSSIER_TYPESAFE_TEST_BASE_URL ?? TYPESAFE_URL, timeoutMs = TIMEOUT_MS, retryDelaysMs = RETRY_DELAYS_MS }: AskOptions,
+  { key, signal, fetchImpl = fetch, baseUrl = TYPESAFE_URL, timeoutMs = TIMEOUT_MS, retryDelaysMs = RETRY_DELAYS_MS }: AskOptions,
 ): Promise<SystemOneResult> {
   const timeout = AbortSignal.timeout(timeoutMs);
   const both = signal ? AbortSignal.any([signal, timeout]) : timeout;

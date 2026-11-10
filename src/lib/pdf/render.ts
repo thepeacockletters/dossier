@@ -2,9 +2,7 @@ import "server-only";
 
 import { chromium, type Browser } from "playwright-core";
 
-import { env } from "@/lib/env";
 
-import { printWithDesktopApp } from "./desktop-print";
 import { PRINT_TOKEN_HEADER, signPrintToken } from "./print-token";
 
 // PDFs are printed by headless Chromium from the app's own print pages, so
@@ -92,7 +90,6 @@ function release(): void {
  * blocked, so fonts come from the bundle and nothing leaves the server.
  */
 export async function renderPdf(path: string): Promise<Uint8Array> {
-  if (env.DOSSIER_DESKTOP_PRINT_URL) return printWithDesktopApp(env.DOSSIER_DESKTOP_PRINT_URL, path);
   await acquire();
   try {
     const origin = appOrigin();

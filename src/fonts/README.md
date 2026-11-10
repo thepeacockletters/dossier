@@ -50,7 +50,7 @@ EOF'
 yarn dlx -p wawoff2 woff2_compress.js Font.ttf Font.woff2
 ```
 
-Then load it in `index.ts` with `next/font/local`, one `src` entry per weight. `e2e/themes.spec.ts` prints every built-in theme and fails on a Type 3 font, so a variable font or a synthesised weight can't slip back in.
+Then load it in `index.ts` with `next/font/local`, one `src` entry per weight. Avoid variable fonts and synthesised weights: they print as Type 3 fonts in PDFs.
 
 ## Fonts for other scripts
 

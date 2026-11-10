@@ -79,7 +79,6 @@ export function GoogleSection({
   initial,
   browserTimeZone,
   redirectUri,
-  inDesktopApp = false,
 }: {
   connection: GoogleConnectionView;
   client: GoogleClientView;
@@ -87,8 +86,6 @@ export function GoogleSection({
   browserTimeZone: string | null;
   /** The address to register in Google Cloud. */
   redirectUri: string;
-  /** On this computer, in the desktop app: Google's sign-in opens in the browser, signed in by the app (#327). */
-  inDesktopApp?: boolean;
 }) {
   const track = useTrackSave();
   const router = useRouter();
@@ -165,14 +162,6 @@ export function GoogleSection({
             <a href="/api/google/connect" className={buttonClassName("primary", "md", "hover:text-on-primary")}>
               Connect Google account
             </a>
-            {inDesktopApp && (
-              <p className="flex flex-wrap items-center gap-x-2 text-meta text-muted">
-                Google&apos;s sign-in opens in your browser. Once it says Connected, come back here.
-                <button type="button" className="underline underline-offset-2 hover:text-ink" onClick={() => router.refresh()}>
-                  Check again
-                </button>
-              </p>
-            )}
           </div>
         )}
       </Card>

@@ -18,9 +18,6 @@ const eslintConfig = defineConfig([
     "coverage/**",
     // The website, as site/build.sh puts it together.
     "_site/**",
-    // End-to-end test output.
-    "playwright-report/**",
-    "test-results/**",
   ]),
 ]);
 

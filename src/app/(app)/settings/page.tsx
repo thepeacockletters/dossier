@@ -4,7 +4,6 @@ import { headers } from "next/headers";
 import { loadAiConfig, loadAiSettingsView } from "@/lib/ai/config";
 import { jobSearchView, loadJobSearchConfig } from "@/lib/job-search/config";
 import { COUNTRIES } from "@/lib/job-search/countries";
-import { isDesktopApp } from "@/lib/desktop";
 import { loadSearch } from "@/lib/posting-searches";
 import { listAgentSearches } from "@/lib/agent/searches";
 import { providerOption } from "@/lib/ai/provider-options";
@@ -74,7 +73,6 @@ export default async function SettingsPage({ searchParams }: PageProps<"/setting
           scoring={await scoringReadiness()}
           countries={COUNTRIES}
           timeZone={await lastKnownTimeZone()}
-          onlyWhileOpen={isDesktopApp()}
         />
       ) : section === "google" ? (
         <>
@@ -84,7 +82,6 @@ export default async function SettingsPage({ searchParams }: PageProps<"/setting
             client={await googleClientView()}
             browserTimeZone={(await userTimeZone()) ?? null}
             redirectUri={redirectUri(await requestOrigin())}
-            inDesktopApp={isDesktopApp()}
             initial={{
               gmailRead: settings.gmailRead,
               gmailScope: settings.gmailScope,
@@ -105,7 +102,6 @@ export default async function SettingsPage({ searchParams }: PageProps<"/setting
         <ConnectorSection
           initial={{ on: settings.connectorEnabledAt !== null, redirects: settings.connectorRedirects }}
           address={mcpUrl(env.DOSSIER_PUBLIC_URL ?? (await requestOrigin()))}
-          inDesktopApp={isDesktopApp()}
         />
       ) : section === "data" ? (
         <DataSection
@@ -117,7 +113,6 @@ export default async function SettingsPage({ searchParams }: PageProps<"/setting
             dir: backupsDir(),
             lastRun: whenRan(await lastNightlyBackup()),
             problem: settings.backupProblem,
-            onlyWhileOpen: isDesktopApp(),
           }}
           jobRetentionHours={settings.jobRetentionHours}
         />
@@ -196,7 +191,7 @@ async function aboutFacts(): Promise<AboutFacts> {
     { label: "Version", value: appVersion },
     { label: "Server", value: host },
     { label: "Database", value: `SQLite · ${formatBytes(Number(database.size))}` },
-    { label: "Sign-in", value: isDesktopApp() ? "none, on this computer" : "set via DOSSIER_PASSWORD" },
+    { label: "Sign-in", value: "set via DOSSIER_PASSWORD" },
     { label: "AI", value: [providerOption(ai.provider).name, ai.model].filter(Boolean).join(" · ") },
     { label: "Applications", value: String(applications) },
   ];

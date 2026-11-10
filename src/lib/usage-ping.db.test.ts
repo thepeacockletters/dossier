@@ -26,14 +26,11 @@ vi.mock("@/lib/prisma", async () => {
   db.client = createTestClient();
   return { prisma: db.client };
 });
-const telemetry = vi.hoisted(() => ({ value: undefined as "on" | "off" | undefined, testUrl: undefined as string | undefined }));
+const telemetry = vi.hoisted(() => ({ value: undefined as "on" | "off" | undefined }));
 vi.mock("@/lib/env", () => ({
   env: {
     get DOSSIER_TELEMETRY() {
       return telemetry.value;
-    },
-    get DOSSIER_USAGE_PING_TEST_URL() {
-      return telemetry.testUrl;
     },
   },
 }));
@@ -55,7 +52,6 @@ const restart = () => delete (globalThis as { usagePingDay?: string }).usagePing
 beforeEach(async () => {
   restart();
   telemetry.value = undefined;
-  telemetry.testUrl = undefined;
   vi.stubEnv("NODE_ENV", "production");
   await resetDatabase(prisma());
 });
@@ -224,12 +220,8 @@ describe("the usage ping", () => {
     expect(await loadSettings()).toMatchObject({ usagePingId: ID, usagePingDay: "2026-10-16" });
   });
 
-  it("counts an error answer as not arriving, and goes to the test receiver when one is set", async () => {
+  it("counts an error answer as not arriving", async () => {
     expect(await sendPing(ID, answering(503))).toBe(false);
     expect(await sendPing(ID, answering(204))).toBe(true);
-    telemetry.testUrl = "http://localhost:3998/ping";
-    const fetchImpl = answering();
-    await sendPing(ID, fetchImpl);
-    expect(sent(fetchImpl)[0].url).toBe("http://localhost:3998/ping");
   });
 });

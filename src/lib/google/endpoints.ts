@@ -1,8 +1,5 @@
-import { env } from "@/lib/env";
 
-// Google's addresses. The end-to-end tests send them all to their fake Google
-// instead (DOSSIER_GOOGLE_TEST_BASE_URL, answered by e2e/fake-google.mts), as
-// <url>/<host>, so the real request and response handling runs end to end.
+// Google's addresses.
 
 const HOSTS = {
   accounts: "https://accounts.google.com",
@@ -11,7 +8,7 @@ const HOSTS = {
   www: "https://www.googleapis.com",
 } as const;
 
-/** `path` on one of Google's hosts, e.g. googleUrl("oauth2", "/token"). Read on each call, as env is. */
-export function googleUrl(host: keyof typeof HOSTS, path: string, base = env.DOSSIER_GOOGLE_TEST_BASE_URL): string {
-  return `${base ? `${base.replace(/\/+$/, "")}/${host}` : HOSTS[host]}${path}`;
+/** `path` on one of Google's hosts, e.g. googleUrl("oauth2", "/token"). */
+export function googleUrl(host: keyof typeof HOSTS, path: string): string {
+  return `${HOSTS[host]}${path}`;
 }

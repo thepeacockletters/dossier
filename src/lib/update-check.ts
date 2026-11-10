@@ -1,6 +1,5 @@
 import "server-only";
 
-import { env } from "@/lib/env";
 import { logServerError } from "@/lib/log";
 import { loadSettings, saveSettings } from "@/lib/settings-data";
 import type { SettingsData } from "@/lib/settings";
@@ -25,9 +24,9 @@ const isReleasePage = (url: string) => url.startsWith(`https://github.com/${RELE
  * Asks GitHub for the latest release; null when it can't tell (offline,
  * slow, or an answer that doesn't look like a release).
  */
-export async function latestRelease(fetchImpl: typeof fetch = fetch, base = env.DOSSIER_UPDATES_TEST_BASE_URL): Promise<Release | null> {
+export async function latestRelease(fetchImpl: typeof fetch = fetch): Promise<Release | null> {
   try {
-    const response = await fetchImpl(`${base ?? "https://api.github.com"}/repos/${RELEASES_REPOSITORY}/releases/latest`, {
+    const response = await fetchImpl(`https://api.github.com/repos/${RELEASES_REPOSITORY}/releases/latest`, {
       headers: { accept: "application/vnd.github+json", "user-agent": "Dossier" },
       signal: AbortSignal.timeout(10_000),
       cache: "no-store",

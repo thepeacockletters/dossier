@@ -2,11 +2,8 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 
 import { BrandMark } from "@/components/brand-mark";
-import { safeNextPath } from "@/lib/auth/next-path";
 import { getSession } from "@/lib/auth/session";
-import { isDesktopApp } from "@/lib/desktop";
 
-import { DesktopBrowserWait } from "./desktop-browser-wait";
 import { LoginForm } from "./login-form";
 
 export const metadata: Metadata = { title: "Sign in" };
@@ -14,9 +11,7 @@ export const metadata: Metadata = { title: "Sign in" };
 /** Password-only sign-in, outside the app shell (PRD AUTH-1, AUTH-8). */
 export default async function LoginPage({ searchParams }: PageProps<"/login">) {
   if (await getSession()) redirect("/");
-  const { next, link } = await searchParams;
-  // On this computer, in the desktop app, there's no password: the app signs a browser in (#365).
-  const desktop = isDesktopApp();
+  const { next } = await searchParams;
 
   return (
     // The form on the panel's colour, a warm wash on the right.
@@ -30,18 +25,12 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
             <div className="text-sm text-muted">Your job search, on your server</div>
           </div>
         </div>
-        {desktop ? (
-          <DesktopBrowserWait next={safeNextPath(typeof next === "string" ? next : null)} expired={link === "expired"} />
-        ) : (
-          <>
-            <LoginForm next={typeof next === "string" ? next : undefined} />
-            <p className="text-meta leading-[1.6] text-pretty text-muted">
-              Your password is set on the server, as a hash in{" "}
-              <code className="font-mono text-label">DOSSIER_PASSWORD</code>. Forgot it? Make a new hash with{" "}
-              <code className="font-mono text-label">hash-password</code> and restart.
-            </p>
-          </>
-        )}
+        <LoginForm next={typeof next === "string" ? next : undefined} />
+        <p className="text-meta leading-[1.6] text-pretty text-muted">
+          Your password is set on the server, as a hash in{" "}
+          <code className="font-mono text-label">DOSSIER_PASSWORD</code>. Forgot it? Make a new hash with{" "}
+          <code className="font-mono text-label">hash-password</code> and restart.
+        </p>
       </div>
       </div>
       <div

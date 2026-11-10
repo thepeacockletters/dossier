@@ -12,8 +12,7 @@ import { loadSettings, saveSettings } from "@/lib/settings-data";
 // is written at 03:00 server time, and backups older than
 // DOSSIER_BACKUP_RETENTION_DAYS are removed. A plain timer in this process,
 // so it's only safe with a single instance of the app (E12-5). A computer
-// that's off at 03:00, as the desktop app's often is, gets the backup soon
-// after Dossier starts, once the last one is over a day old (#325).
+// that's off at 03:00 gets the backup soon after Dossier starts, once the last one is over a day old (#325).
 
 const HOUR = 3;
 const DAY_MS = 24 * 60 * 60 * 1000;

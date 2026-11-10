@@ -213,13 +213,13 @@ Backup/export schema **11** includes `agentSearches` and `agentCandidateSearches
 
 Per-search history reports **source collection**, not successful AI evaluation: found/new counts can overlap between searches and precede batch dedupe/scoring. A completed source request can coexist with model failure; its batch outcome is shown separately. Candidate attribution retains historical names after search rename/delete, but candidate dismissal removes it. Rendering is read-only: it shows interrupted reservations when no queued/live scan owns them, without acquiring the execution lock or changing the ledger; the next scan persists reconciliation under execution ownership. The broader scan-versus-destructive-import lifecycle race is pre-existing and not solved by the narrow attribution lock: an import/wipe can replace scan inputs while a batch is in flight. Do not treat that lock as whole-scan lifecycle serialization.
 
-The end-to-end specs `e2e/agent.spec.ts` and `e2e/agent-searches.spec.ts` run against the fake JSearch and fake AI, which scores by title (`posting_score` in `e2e/fake-ai.mts`). They cover multiple-search CRUD, cross-tab cap/stale errors, source partial failure, shared quota/score limits, attribution after rename/delete, v8 exports, mobile layout and accessibility. Database tests cover migration/bootstrap, backup round-trips, exclusion/overlap, reservation accounting and schedule deferral. No real source or paid AI requests are needed.
+Database tests cover migration/bootstrap, backup round-trips, exclusion/overlap, reservation accounting and schedule deferral. No real source or paid AI requests are needed.
 
 ## Usage ping
 
 The usage ping is opt-in. A production server asks once after sign-in (`src/app/(app)/usage-ping-dialog.tsx`, shown by the signed-in layout while nobody has answered and `DOSSIER_TELEMETRY` isn't set) and sends nothing before a yes. After one, on each day someone signed in opens a page, it sends `https://telemetry.dossier.aien.me/ping` the install's random ID and the version, once (`src/lib/usage-ping.ts`, called with `after()` from the signed-in layout). `DOSSIER_TELEMETRY=on` or `off` answers in advance and wins while it's set.
 
-The answer, when it was given and the version of the question's text are the settings `usagePingChoice`, `usagePingChoiceAt` and `usagePingChoiceText`; the ID and the day of the last ping are `usagePingId` and `usagePingDay`. Exports leave them all out and imports keep them (`INSTALL_SETTINGS` in `src/lib/data-export.ts`). A no deletes the ID. When the question's text changes, raise `USAGE_PING_TEXT_VERSION`, and everyone is asked again. Development servers and tests never ask or send it (`NODE_ENV` isn't `production`). The end-to-end run is a production build: `resetData()` answers no, `e2e/usage-ping.spec.ts` asks, and a yes goes to the fake job sources (`DOSSIER_USAGE_PING_TEST_URL`), never the project.
+The answer, when it was given and the version of the question's text are the settings `usagePingChoice`, `usagePingChoiceAt` and `usagePingChoiceText`; the ID and the day of the last ping are `usagePingId` and `usagePingDay`. Exports leave them all out and imports keep them (`INSTALL_SETTINGS` in `src/lib/data-export.ts`). A no deletes the ID. When the question's text changes, raise `USAGE_PING_TEXT_VERSION`, and everyone is asked again. Development servers and tests never ask or send it (`NODE_ENV` isn't `production`).
 
 The receiving end is a small service on the project's own server that isn't published with the app. Change what the ping sends only together with it, the wiki's [Privacy](https://github.com/AienTech/dossier/wiki/Privacy) page and Settings → About.
 
@@ -235,21 +235,7 @@ The answer and the dismissed IDs are the settings `announcementFeed` and `announ
 
 The backend is the project's own service and isn't published with the app. `src/lib/announcements/api-v1.schema.json` is a copy of its contract, and a test compares it with what the app reads, so update the copy when the contract grows. The API only grows, so the app ignores what it doesn't know.
 
-A production server asks `https://api.dossier.aien.me/v1`. A development server only asks while `DOSSIER_API_URL` is set, and then on every page, so a change shows without the wait: the first reload asks, and the next one shows it. To try it against a local copy of the backend, set that variable, for example in an untracked `compose.override.yml`. The variable isn't in `.env.example` or `compose.production.yml`, because nobody running the image needs it. `e2e/announcements.spec.ts` points it at the fake job sources.
-## The desktop app
-
-`desktop/` is the app for Linux and Windows, built with Electron. One download, two modes, chosen on first launch: **On my server** opens the user's own Dossier in a window, and **On this computer** runs Dossier itself. There's no auto-update: people download each new version from the release page.
-
-It has its own `package.json` and `yarn.lock`, so the image doesn't carry Electron.
-
-The window has no title bar or menu row of the system's. `desktop/bar/` is the app's own top bar, with the system's window buttons drawn over it, and the page is a view below it, so no server version has to know about the bar. The bar takes its colours from the page's `body` (`bar-colors.ts`), read again when the page loads and when the `dossier_theme` cookie changes.
-
-On this computer runs the same standalone server as the image, on a plain Node binary that ships inside the app, and on SQLite in the user's app folder. So nothing native is built for Electron, and an Electron update, which is how Chromium's security fixes arrive, can't be held back by it. `desktop/scripts/prepare-server.mjs` puts it together for one platform, checking every download against a pinned hash, and the app's own Chromium prints the PDFs (`print-service.ts`, `src/lib/pdf/desktop-print.ts`). The server listens on 127.0.0.1 only. The app makes a secret on first launch and a token at each launch, and signs itself in with the token (`src/lib/desktop.ts`): there's no password, but the sign-in page stays, so other programs reaching the port get nowhere.
-
-Migrations run without Prisma's tools (`server-tools/migrate.mjs`) and **not in a transaction**, because SQLite ignores the files' `PRAGMA foreign_keys=OFF` inside one, and rebuilding a table would then delete the rows that point at it. It copies the database first, and refuses a database from a newer version.
-
-A view showing a server has no preload and is treated as any web page: other sites and mail go to the system browser (`window-rules.ts`), and the page may ask for nothing but writing to the clipboard, for the app's Copy buttons. Only the app's own start screen and bar get the small APIs in `preload.ts` and `bar-preload.ts`.
-
+A production server asks `https://api.dossier.aien.me/v1`. A development server only asks while `DOSSIER_API_URL` is set, and then on every page, so a change shows without the wait: the first reload asks, and the next one shows it. To try it against a local copy of the backend, set that variable, for example in an untracked `compose.override.yml`. The variable isn't in `.env.example` or `compose.production.yml`, because nobody running the image needs it.
 ## Tests and checks
 
 Tests use [Vitest](https://vitest.dev). They read `.env` and run in UTC:
@@ -269,16 +255,6 @@ They refuse to run against a file whose name doesn't end in `_test`, so your dev
 
 GitHub Actions (`.github/workflows/ci.yml`) runs lint, type-check and tests with coverage, on release branches (`release/1.12.0`), when one is pushed and on each push after that, and shows the coverage in the job summary. A newer push to the same branch cancels the run it replaces. Nothing else runs them: pull requests aren't checked, so run the checks yourself before you open one. The public repository has no release branches: `image.yml` runs the same jobs there after each merge or publish to `main`, before it builds the image. The coverage thresholds in `vitest.config.mts` ratchet: they sit a few points below the coverage when they were set, and CI fails if coverage drops below them. Raise them when you add tests.
 
-### End-to-end tests
-
-[Playwright](https://playwright.dev) tests in `e2e/` click through the main flows in headless Chromium: signing in, the profile, the theme builder and PDFs, finding a job and applying from it, a new application, refining and undoing, the application email, the board and table, the dashboard, and export, delete and import. `e2e/accessibility.spec.ts` runs [axe](https://github.com/dequelabs/axe-core) on every screen and its open menus and dialogs (no serious or critical WCAG 2.2 AA violations allowed) and checks where keyboard focus goes. They run against a production build, on the standalone server the image uses, so build first:
-
-```bash
-yarn build && yarn test:e2e
-```
-
-The run starts its own server on port 3100 with a separate `dossier_e2e.db` database next to yours (created and migrated on the way, reset to the demo data before the specs that change data), a fake OpenAI-compatible server on port 3999 (`e2e/fake-ai.mts`) that answers each AI task with plausible output, fake job sources on port 3998 (`e2e/fake-jobs.mts`), which the app reaches through `DOSSIER_JOBS_TEST_BASE_URL`, a variable for the tests only, and a fake Google on port 3997 (`e2e/fake-google.mts`) for sign-in, Gmail and Calendar (`DOSSIER_GOOGLE_TEST_BASE_URL`), which only comes into play once a spec enters an OAuth client in Settings → Google. The daily update check asks the same fake instead of GitHub (`DOSSIER_UPDATES_TEST_BASE_URL`), which says no release is out, so a spec can store the latest release itself, and so does Jev (`DOSSIER_TYPESAFE_TEST_BASE_URL`), with answers made from the questions. The same fake answers for the project's backend (`DOSSIER_API_URL`), with no notices until a spec says otherwise. Your development server and data are never touched: the tests refuse any database whose name doesn't end in `_e2e`. CI runs them in a job of their own and keeps the report of a failed run as an artifact.
-
 ## The production image
 
 The `Dockerfile` makes the production image. It holds the standalone Next.js server, Playwright's Chromium for PDFs, and Prisma's CLI for migrations, runs as `node`, and starts with `docker/start.sh`: `prisma migrate deploy`, the seed (compiled with esbuild at build time), then the server. To build and try it with Docker:
@@ -288,7 +264,7 @@ docker build -t dossier:local .
 DOSSIER_IMAGE=dossier:local DOSSIER_PORT=3300 docker compose -f compose.production.yml -p dossier-local up -d
 ```
 
-In the public repository, `image.yml` pushes an image for every commit on `main` to `ghcr.io/<owner>/<repository>:<sha>` (lower case), once the checks and the end-to-end tests pass. A version tag (`v1.0.0`) then tags that commit's image with the version and `latest`.
+In the public repository, `image.yml` pushes an image for every commit on `main` to `ghcr.io/<owner>/<repository>:<sha>` (lower case) once the checks pass. A version tag (`v1.0.0`) then tags that commit's image with the version and `latest`.
 
 ## The website
 

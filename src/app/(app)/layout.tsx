@@ -6,7 +6,6 @@ import { countAgentQueue } from "@/lib/agent/view";
 import { checkAnnouncementsIfDue } from "@/lib/announcements/check";
 import { currentAnnouncement } from "@/lib/announcements/visible";
 import { verifySession } from "@/lib/auth/session";
-import { isDesktopApp } from "@/lib/desktop";
 import { inboxCount } from "@/lib/google/inbox-data";
 import { loadProfileName } from "@/lib/profile-data";
 import { prisma } from "@/lib/prisma";
@@ -59,7 +58,6 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         userName={userName}
         update={updateNotice(settings)}
         currentVersion={appVersion}
-        desktop={isDesktopApp()}
         collapsed={parseSidebarCollapsed(jar.get(SIDEBAR_COOKIE)?.value)}
         counts={{ ...(waiting > 0 ? { "/inbox": waiting } : {}), ...(agent > 0 ? { "/agent": agent } : {}) }}
         colorScheme={parseColorScheme(jar.get(COLOR_SCHEME_COOKIE)?.value)}

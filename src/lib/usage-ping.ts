@@ -130,7 +130,7 @@ export async function pingIfNewDay({ now = new Date(), production = sendsFromHer
 }
 
 /** One request with the ID and the version; false if it doesn't arrive. Never throws. */
-export async function sendPing(id: string, fetchImpl: typeof fetch = fetch, url = env.DOSSIER_USAGE_PING_TEST_URL ?? USAGE_PING_URL): Promise<boolean> {
+export async function sendPing(id: string, fetchImpl: typeof fetch = fetch, url = USAGE_PING_URL): Promise<boolean> {
   try {
     const response = await fetchImpl(url, {
       method: "POST",

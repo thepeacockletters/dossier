@@ -60,12 +60,6 @@ describe("latestRelease (E10-9)", () => {
     expect(init?.body).toBeUndefined();
   });
 
-  it("asks the fake for the end-to-end tests instead, when set", async () => {
-    const fetch = releaseOf("0.2.0");
-    await latestRelease(fetch, "http://localhost:3998/github");
-    expect(fetch.mock.calls[0][0]).toBe("http://localhost:3998/github/repos/AienTech/dossier/releases/latest");
-  });
-
   it("can't tell offline, without a release, or from an answer that isn't one", async () => {
     expect(await latestRelease(answer(404, { message: "Not Found" }))).toBeNull();
     expect(await latestRelease(vi.fn(async () => Promise.reject(new TypeError("fetch failed"))))).toBeNull();
