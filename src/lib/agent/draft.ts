@@ -19,7 +19,6 @@ import { prisma } from "@/lib/prisma";
 import { loadSettings } from "@/lib/settings-data";
 
 import { DISMISSED_TRIM } from "./candidates";
-import { lockAgentSearches } from "./searches";
 
 // A candidate's draft (E16-5): written the way New application writes one,
 // kept off Applications until it's approved (#195), and never sent.
@@ -168,7 +167,6 @@ export async function dismissCandidate(candidateId: string): Promise<{ undo: Dis
   await dismissPosting(foundFromCandidate(candidate));
   await prisma.$transaction(async (tx) => {
     // Serialized with attribution, so a scan can't put labels back after the dismissal (public PR 61).
-    await lockAgentSearches(tx);
     // Locked (by a write that changes nothing), so a draft that's just being created either lands first and is deleted here, or finds it dismissed and isn't made.
     await tx.$executeRaw`UPDATE "AgentCandidate" SET id = id WHERE id = ${candidateId}`;
     const current = await tx.agentCandidate.findUniqueOrThrow({ where: { id: candidateId }, select: { applicationId: true } });

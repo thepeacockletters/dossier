@@ -59,7 +59,7 @@ test("finds, scores, drafts and dismisses, and never brings a posting back", asy
   await expect(page.getByText("Added to Applications as a draft. Nothing has been sent.")).toBeVisible();
   await page.goto("/applications?view=table");
   await expect(page.locator(`a[href="/applications/${draft.id}"]`).first()).toBeVisible();
-  expect(await sql(`SELECT status, "awaitingReview" FROM "Application" WHERE id = $1`, [draft.id])).toEqual([{ status: "DRAFT", awaitingReview: false }]);
+  expect(await sql(`SELECT status, "awaitingReview" FROM "Application" WHERE id = $1`, [draft.id])).toEqual([{ status: "DRAFT", awaitingReview: 0 }]);
 
   // Dismiss the other one.
   await page.goto("/agent");

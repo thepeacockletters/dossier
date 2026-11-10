@@ -38,7 +38,7 @@ async function publish(page: Page, ...notices: Notice[]) {
 }
 
 /** Makes the next page load ask again, keeping what's stored. */
-const makeDue = () => sql(`UPDATE "Setting" SET value = jsonb_set(value::jsonb, '{nextCheckAt}', '"2020-01-01T00:00:00.000Z"')::text WHERE key = 'announcementFeed'`);
+const makeDue = () => sql(`UPDATE "Setting" SET value = json_set(value, '$.nextCheckAt', '2020-01-01T00:00:00.000Z') WHERE key = 'announcementFeed'`);
 
 /** Loads a page while it's due and waits until the backend was asked. */
 async function askAgain(page: Page) {

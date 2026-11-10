@@ -1,27 +1,13 @@
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
-import { PrismaPg } from "@prisma/adapter-pg";
 
 import { PrismaClient } from "@/generated/prisma/client";
-import { PrismaClient as SqliteClient } from "@/generated/prisma-sqlite/client";
 
-// Dossier keeps its data in PostgreSQL, or in an SQLite file when
-// DATABASE_URL is one ("file:/data/dossier.db"), for a single container
-// without a database server. The SQLite schema is made from the PostgreSQL
-// one (prisma/sqlite), so both clients have the same models, and the code
-// uses the PostgreSQL client's types for both.
+// Dossier keeps its data in one SQLite file, named by DATABASE_URL
+// ("file:/data/dossier.db").
 
-/** Whether `url` names an SQLite file rather than a PostgreSQL server. */
-export function isSqliteUrl(url: string): boolean {
-  return url.startsWith("file:");
-}
-
-/** Whether this server keeps its data in SQLite: what DATABASE_URL says, as the app, the desktop app and each test run set it. */
-export const usesSqlite = (): boolean => isSqliteUrl(process.env.DATABASE_URL ?? "");
-
-/** A client for the database at `url`. */
+/** A client for the SQLite file at `url`. */
 export function createPrismaClient(url: string): PrismaClient {
-  if (!isSqliteUrl(url)) return new PrismaClient({ adapter: new PrismaPg({ connectionString: url }) });
-  return new SqliteClient({ adapter: new OneAtATime({ url }) }) as unknown as PrismaClient;
+  return new PrismaClient({ adapter: new OneAtATime({ url }) });
 }
 
 type Adapter = Awaited<ReturnType<PrismaBetterSqlite3["connect"]>>;

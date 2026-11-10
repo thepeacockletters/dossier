@@ -9,8 +9,8 @@ import { askJev } from "./typesafe";
 // Checks against TypeSafe's real Jev (#274), skipped unless asked for. Each
 // spends tokens on your TypeSafe account:
 //
-//   docker compose exec -e JEV_LIVE=check app yarn vitest run src/lib/scoring/jev.live.test.ts
-//   docker compose exec -e JEV_LIVE=compare app yarn vitest run src/lib/scoring/jev.live.test.ts
+//   JEV_LIVE=check yarn vitest run src/lib/scoring/jev.live.test.ts
+//   JEV_LIVE=compare yarn vitest run src/lib/scoring/jev.live.test.ts
 //
 // The key is DOSSIER_TYPESAFE_KEY when that's set, or else the one saved in
 // Settings → Scoring. `check` scores two postings against the demo profile:

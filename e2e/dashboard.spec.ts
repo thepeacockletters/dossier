@@ -7,9 +7,9 @@ test.beforeAll(resetData);
 
 async function expected() {
   const [row] = await sql<{ sent: number; heard: number; interview: number }>(`
-    SELECT count(*) FILTER (WHERE "furthestStage" IS NOT NULL)::int AS sent,
-           count(*) FILTER (WHERE "furthestStage" IN ('SCREENING', 'INTERVIEW', 'OFFER', 'ACCEPTED'))::int AS heard,
-           count(*) FILTER (WHERE "furthestStage" IN ('INTERVIEW', 'OFFER', 'ACCEPTED'))::int AS interview
+    SELECT count(*) FILTER (WHERE "furthestStage" IS NOT NULL) AS sent,
+           count(*) FILTER (WHERE "furthestStage" IN ('SCREENING', 'INTERVIEW', 'OFFER', 'ACCEPTED')) AS heard,
+           count(*) FILTER (WHERE "furthestStage" IN ('INTERVIEW', 'OFFER', 'ACCEPTED')) AS interview
     FROM "Application"`);
   return row;
 }
@@ -34,8 +34,8 @@ test("shows the funnel as the data has it", async ({ page }) => {
 
 test("the time filter scopes the figures and is remembered (E9-8)", async ({ page }) => {
   const [recent] = await sql<{ started: number; sent: number }>(`
-    SELECT count(*)::int AS started, count(*) FILTER (WHERE "furthestStage" IS NOT NULL)::int AS sent
-    FROM "Application" WHERE "createdAt" >= now() - interval '30 days'`);
+    SELECT count(*) AS started, count(*) FILTER (WHERE "furthestStage" IS NOT NULL) AS sent
+    FROM "Application" WHERE "createdAt" >= strftime('%Y-%m-%dT%H:%M:%f+00:00', 'now', '-30 days')`);
   await page.goto("/");
   await page.getByRole("radio", { name: "Last 30 days" }).click();
   await expect(page).toHaveURL(/\?period=30d$/);

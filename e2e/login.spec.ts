@@ -52,7 +52,7 @@ test("lets a browser that signed in before in while new browsers wait", async ({
   await expect(page).toHaveURL(/\/login/);
 
   await sql(`INSERT INTO "LoginThrottle" (key, failures, "windowStart", "blockedUntil", "updatedAt")
-    VALUES ('*', 30, now(), now() + interval '15 minutes', now())
+    VALUES ('*', 30, now(), strftime('%Y-%m-%dT%H:%M:%f+00:00', 'now', '+15 minutes'), now())
     ON CONFLICT (key) DO UPDATE SET failures = excluded.failures, "blockedUntil" = excluded."blockedUntil"`);
 
   // A context of its own doesn't get the project's options, the address included.

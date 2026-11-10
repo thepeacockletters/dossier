@@ -21,24 +21,9 @@ jobs:
   check:
     name: Lint, type-check and test
     runs-on: ubuntu-latest
-    services:
-      # For the database tests (*.db.test.ts), which create and migrate their own
-      # "dossier_test" database on this server.
-      postgres:
-        image: postgres:18-alpine
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: dossier
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres -d dossier"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
     env:
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/dossier
+      # The database tests make and migrate their own dossier_test.db next to it.
+      DATABASE_URL: file:${{ runner.temp }}/dossier.db
       # Same versions as the Dockerfile: Node 24 with the Yarn release pinned in
       # package.json (packageManager), installed through corepack.
       COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
@@ -68,11 +53,6 @@ jobs:
       - run: yarn typecheck
       # Fails when coverage drops below the thresholds in vitest.config.mts (E11-1).
       - run: yarn test:coverage
-      # The database tests again, against SQLite (DATABASE_URL=file:…).
-      - name: Database tests on SQLite
-        run: yarn vitest run --project db
-        env:
-          DATABASE_URL: file:${{ runner.temp }}/dossier.db
       - name: Coverage summary
         if: always()
         run: node .github/scripts/coverage-summary.mjs >> "$GITHUB_STEP_SUMMARY"
@@ -80,23 +60,9 @@ jobs:
   e2e:
     name: End-to-end tests
     runs-on: ubuntu-latest
-    services:
-      # The tests create and migrate their own "dossier_e2e" database here.
-      postgres:
-        image: postgres:18-alpine
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: dossier
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U postgres -d dossier"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 10
     env:
-      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/dossier
+      # The tests make and migrate their own dossier_e2e.db next to it.
+      DATABASE_URL: file:${{ runner.temp }}/dossier.db
       COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
     steps:
       - uses: actions/checkout@v7

@@ -6,7 +6,6 @@ import { z } from "zod";
 
 import { AiProvider, Creativity, DateFormat, JobStatus, PaperSize, Tone } from "@/generated/prisma/enums";
 import { action, ActionError } from "@/lib/action";
-import { lockAgentSearches } from "@/lib/agent/searches";
 import { AiError, createProvider } from "@/lib/ai";
 import { applyApiKeyChange } from "@/lib/ai/api-key";
 import { keyStateOf, loadAiConfig, resolveAiConfig } from "@/lib/ai/config";
@@ -286,7 +285,6 @@ export const deleteEverything = action(z.object({ confirm: z.literal("DELETE") }
   await disconnectGoogle().catch(() => {});
 
   await prisma.$transaction(async (tx) => {
-    await lockAgentSearches(tx);
     await tx.job.deleteMany();
     // The tokens each AI request used (#290).
     await tx.aiUsage.deleteMany();

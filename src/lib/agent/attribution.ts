@@ -5,7 +5,6 @@ import { postingStates } from "@/lib/postings";
 import { prisma } from "@/lib/prisma";
 
 import { agentDedupeKey } from "./candidates";
-import { lockAgentSearches } from "./searches";
 
 /**
  * Link a search's results only to candidates already kept (newly scored or
@@ -20,7 +19,6 @@ export async function attributeAgentCandidates(search: { id: string; name: strin
   await prisma.$transaction(async (tx) => {
     // Always take the shared advisory lock before reads/row locks, matching
     // search edits, import and wipe. No source calls happen under this lock.
-    await lockAgentSearches(tx);
     if (!await tx.agentSearch.findUnique({ where: { id: search.id } })) return;
     const states = await postingStates(postings, tx);
     const eligible = postings.filter((posting) => {

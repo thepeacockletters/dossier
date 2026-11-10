@@ -123,7 +123,7 @@ describe("createApplication", () => {
     // "Anything I should know?" is the application's first fact (APP-15).
     expect(await prisma().fact.findMany({ where: { applicationId: id }, select: { text: true } })).toEqual([{ text: "Relocating in January." }]);
     expect(application.deadline?.toISOString().slice(0, 10)).toBe("2026-10-20");
-    // Sorted here: SQLite sorts enums by name, PostgreSQL in their order.
+    // Sorted here: SQLite sorts enums by name, not in their order.
     expect(application.documents.map((document) => [document.kind, document.themeId, document.writtenWith]).sort()).toEqual([
       ["COVER_LETTER", "editorial", "write-cover-letter@1"],
       ["RESUME", "editorial", "tailor-resume@1"],

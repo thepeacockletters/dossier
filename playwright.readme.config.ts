@@ -1,3 +1,5 @@
+import "dotenv/config";
+
 import path from "node:path";
 
 import { defineConfig } from "@playwright/test";
@@ -9,7 +11,7 @@ import base from "./playwright.config";
 // the end-to-end stack (a production build with the fake AI server and job
 // sources; see DEVELOPMENT.md). Not part of `yarn test:e2e`. After `yarn build`:
 //
-//   docker/bin/yarn playwright test --config playwright.readme.config.ts
+//   yarn playwright test --config playwright.readme.config.ts
 //
 // The screenshots replace .github/images/*.png; the recording lands in
 // test-results/readme/demo.webm, to convert to .github/images/demo.gif.

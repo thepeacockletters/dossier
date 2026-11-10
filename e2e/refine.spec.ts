@@ -79,9 +79,9 @@ test("edits the letter's greeting and date, which a letter from before showed wi
 
   await page.reload();
   await expect(page.locator('[data-unit="greeting"]')).toContainText("Beste Ledgerly-team,");
-  const [letter] = await sql<{ units: { id: string; text: string }[] }>(
+  const [letter] = await sql<{ units: string }>(
     `SELECT units FROM "Document" WHERE "applicationId" = $1 AND kind = 'COVER_LETTER'`,
     [url.split("/").pop()],
   );
-  expect(letter.units.slice(0, 2).map((unit) => unit.id)).toEqual(["date", "greeting"]);
+  expect((JSON.parse(letter.units) as { id: string }[]).slice(0, 2).map((unit) => unit.id)).toEqual(["date", "greeting"]);
 });

@@ -89,7 +89,7 @@ test("finds hiring startups with the addresses they publish, and leaves alone wh
   await harbour.getByRole("button", { name: "Remove for good" }).click();
   await page.getByRole("alertdialog").getByRole("button", { name: "Remove for good" }).click();
   await expect(harbour).toHaveCount(0);
-  expect(await sql(`SELECT count(*)::int AS n FROM "StartupBlock"`)).toEqual([{ n: 3 }]);
+  expect(await sql(`SELECT count(*) AS n FROM "StartupBlock"`)).toEqual([{ n: 3 }]);
   await page.getByRole("button", { name: "Refresh" }).click();
   await expect(page.getByText("No new startups this time.")).toBeVisible({ timeout: 30_000 });
   await expect(harbour).toHaveCount(0);

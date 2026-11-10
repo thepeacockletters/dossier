@@ -10,23 +10,6 @@ ENV COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 # Where Playwright keeps Chromium: in the image, not in a user's home or a volume.
 ENV PLAYWRIGHT_BROWSERS_PATH=/ms-playwright
 
-# Development image: dependencies are baked in, source is bind-mounted by compose.yml.
-FROM base AS dev
-RUN chown node:node /app
-USER node
-COPY --chown=node:node package.json yarn.lock .yarnrc.yml ./
-RUN yarn install --immutable && mkdir .next
-# Chromium for PDFs, matching the installed playwright-core, with the system
-# libraries and fonts it needs (installing those takes root). Only the
-# headless shell: printing needs nothing more.
-USER root
-RUN node node_modules/playwright-core/cli.js install --with-deps --only-shell chromium \
-  && rm -rf /var/lib/apt/lists/*
-USER node
-EXPOSE 3000
-# The seed is idempotent: built-in themes, an empty profile and default settings.
-CMD ["sh", "-c", "yarn generate && yarn prisma migrate deploy && yarn prisma db seed && yarn dev"]
-
 # ── Production (E12-1) ───────────────────────────────────────────────────────
 # Dependencies, then the build, then a runtime with only what running needs:
 # the standalone server, Chromium for PDFs, and Prisma's CLI for migrations.
@@ -52,11 +35,10 @@ RUN mkdir /tools && node -e ' \
   }));' \
   && cd /tools && npm install --omit=dev --no-audit --no-fund \
   && cp -r /app/prisma7.config.ts /app/prisma /tools/
-# The seed as one JavaScript file, so it runs without tsx (E12-3). Bundled
-# CommonJS packages (pg) need a real require; SQLite's native module is
-# installed in /tools above instead.
+# The seed as one JavaScript file, so it runs without tsx (E12-3). SQLite's
+# native module is installed in /tools above instead of bundled.
 RUN node_modules/.bin/esbuild prisma/seed.ts --bundle --platform=node --format=esm --target=node24 \
-  --external:pg-native --external:better-sqlite3 --outfile=/tools/seed.mjs \
+  --external:better-sqlite3 --outfile=/tools/seed.mjs \
   --banner:js='import { createRequire } from "node:module"; const require = createRequire(import.meta.url);'
 # `hash-password`, which makes the hash for DOSSIER_PASSWORD, as one file too.
 RUN node_modules/.bin/esbuild scripts/hash-password.ts --bundle --platform=node --format=esm --target=node24 \
@@ -71,7 +53,7 @@ ENV NODE_ENV=production \
     HOSTNAME=0.0.0.0 \
     DOSSIER_DATA_DIR=/data
 # Chromium for PDFs with its system libraries and fonts, matching the app's
-# playwright-core, as in the dev image. Its CLI is only mounted for this.
+# playwright-core. Its CLI is only mounted for this.
 RUN --mount=type=bind,from=deps,source=/app/node_modules/playwright-core,target=/tmp/playwright-core \
   node /tmp/playwright-core/cli.js install --with-deps --only-shell chromium \
   && rm -rf /var/lib/apt/lists/*

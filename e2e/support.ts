@@ -1,8 +1,8 @@
 import { execFileSync } from "node:child_process";
+import { DatabaseSync } from "node:sqlite";
 import { crc32, deflateSync } from "node:zlib";
 
 import type { Page } from "@playwright/test";
-import { Pool } from "pg";
 
 // What the end-to-end tests (E11-2) run against: a production build on its
 // own port, with its own database and a fake AI server, so a run never
@@ -18,19 +18,17 @@ const PASSWORD_HASH = "argon2id:m=19456,t=2,p=1:wk-0a22NLDwpNVDMxLY9rw:x4bAXEh9E
 export const STORAGE_STATE = "e2e/.auth/state.json";
 
 /**
- * DATABASE_URL with "_e2e" added to the database name (or E2E_DATABASE_URL).
- * Refuses any other name, so the tests can never wipe real data.
+ * The file in DATABASE_URL with "_e2e" added to its name, before its
+ * extension (or E2E_DATABASE_URL). Refuses any other name, so the tests can
+ * never wipe real data.
  */
 export function e2eDatabaseUrl(): string {
   const explicit = process.env.E2E_DATABASE_URL;
   const base = process.env.DATABASE_URL;
   if (!explicit && !base) throw new Error("End-to-end tests need DATABASE_URL or E2E_DATABASE_URL.");
-  const url = new URL(explicit ?? base!);
-  if (!explicit) url.pathname = `${url.pathname}_e2e`;
-  if (!url.pathname.endsWith("_e2e")) {
-    throw new Error(`Refusing to run end-to-end tests against "${url.pathname.slice(1)}": its name must end in "_e2e".`);
-  }
-  return url.toString();
+  const url = explicit ?? base!.replace(/(\.\w+)?$/, "_e2e$1");
+  if (!/_e2e(\.\w+)?$/.test(url)) throw new Error(`Refusing to run end-to-end tests against "${url}": its name must end in "_e2e".`);
+  return url;
 }
 
 /** The app's environment for a run. */
@@ -64,12 +62,22 @@ export function appEnv(): Record<string, string> {
   };
 }
 
-let pool: Pool | undefined;
+let db: DatabaseSync | undefined;
 
-/** Runs SQL against the test database, for setting up and checking data. */
+/**
+ * Runs SQL against the test database, for setting up and checking data:
+ * `$1`-style parameters, and now() for the current time as the app writes it.
+ */
 export async function sql<Row extends object = Record<string, unknown>>(text: string, values: unknown[] = []): Promise<Row[]> {
-  pool ??= new Pool({ connectionString: e2eDatabaseUrl(), max: 2 });
-  return (await pool.query<Row>(text, values)).rows;
+  if (!db) {
+    db = new DatabaseSync(e2eDatabaseUrl().slice("file:".length), { timeout: 5_000 });
+    db.function("now", () => new Date().toISOString().replace("Z", "+00:00"));
+  }
+  const statement = db.prepare(text.replace(/\$(\d+)/g, "?$1"));
+  const params = values as (string | number | null)[];
+  if (/^\s*(SELECT|WITH)\b/i.test(text) || /\bRETURNING\b/i.test(text)) return statement.all(...params) as unknown as Row[];
+  statement.run(...params);
+  return [];
 }
 
 /** USAGE_PING_TEXT_VERSION in src/lib/usage-ping.ts, which a spec can't import (it's server-only). */
@@ -93,10 +101,14 @@ export async function fakePings(): Promise<{ id: string; version: string }[]> {
 
 /** Empties every table, then loads the built-in themes and the demo data, with the usage ping question answered no. */
 export async function resetData(): Promise<void> {
-  const tables = await sql<{ tablename: string }>(
-    "SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename <> '_prisma_migrations'",
+  const tables = await sql<{ name: string }>(
+    `SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%' AND name <> '_prisma_migrations'`,
   );
-  await sql(`TRUNCATE TABLE ${tables.map(({ tablename }) => `"${tablename}"`).join(", ")} RESTART IDENTITY CASCADE`);
+  // Built-in themes can't be deleted (the init migration's trigger), and the order doesn't matter with the checks off.
+  await sql("PRAGMA foreign_keys = OFF");
+  await sql(`UPDATE "Theme" SET "builtIn" = false`);
+  for (const { name } of tables) await sql(`DELETE FROM "${name}"`);
+  await sql("PRAGMA foreign_keys = ON");
   execFileSync("yarn", ["prisma", "db", "seed", "--", "--demo"], {
     env: { ...process.env, DATABASE_URL: e2eDatabaseUrl() },
     stdio: "pipe",

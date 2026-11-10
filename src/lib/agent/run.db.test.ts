@@ -22,11 +22,6 @@ vi.mock("@/lib/prisma", async () => {
   db.client = createTestClient();
   return { prisma: db.client };
 });
-vi.mock("./scan-lock", async (original) => {
-  const { withAgentScanLock } = await original<typeof import("./scan-lock")>();
-  const { testDatabaseUrl } = await import("@/test/db");
-  return { withAgentScanLock: <T>(work: (signal: AbortSignal) => Promise<T>) => withAgentScanLock(work, testDatabaseUrl()) };
-});
 // Settings → Scoring reads DOSSIER_SCORER (#274).
 vi.mock("@/lib/env", () => ({ env: { DOSSIER_SECRET: "a".repeat(32) } }));
 // Drafts are their own jobs; here it's enough to see them queued.

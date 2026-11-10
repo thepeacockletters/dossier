@@ -6,7 +6,7 @@ import { resetData, sql } from "./support";
 test.beforeAll(resetData);
 
 test("exports, deletes everything and imports it all back", async ({ page }) => {
-  const [before] = await sql<{ count: number }>(`SELECT count(*)::int AS count FROM "Application"`);
+  const [before] = await sql<{ count: number }>(`SELECT count(*) AS count FROM "Application"`);
 
   await page.goto("/settings?section=data");
   const [download] = await Promise.all([page.waitForEvent("download"), page.getByRole("link", { name: "Export" }).click()]);
@@ -30,7 +30,7 @@ test("exports, deletes everything and imports it all back", async ({ page }) => 
   await page.getByRole("alertdialog").getByRole("button", { name: "Import and replace" }).click();
   await expect(page.getByText(/^Imported\. Your previous data is backed up as/)).toBeVisible({ timeout: 30_000 });
 
-  const [after] = await sql<{ count: number }>(`SELECT count(*)::int AS count FROM "Application"`);
+  const [after] = await sql<{ count: number }>(`SELECT count(*) AS count FROM "Application"`);
   expect(after.count).toBe(before.count);
   await page.goto("/applications");
   await expect(page.getByText("Kestrel Maps")).toBeVisible();

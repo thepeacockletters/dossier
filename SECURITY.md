@@ -45,4 +45,4 @@ Dependabot proposes updates once a week, for the npm packages, GitHub Actions an
 | `deepmerge-ts` 7.1.5, from `@prisma/config` | Stack exhaustion on recursive objects ([GHSA-ggr8-5vv4-36mx](https://github.com/advisories/GHSA-ggr8-5vv4-36mx)) | Only merges Prisma's own config when its CLI starts; no user input reaches it. The fix is in 8.x, which Prisma doesn't support yet. |
 | `eslint` 9 | Version no longer supported | Development only. Waits for `eslint-config-next` to support ESLint 10. |
 
-`mysql2`, which Prisma's CLI ships but Dossier never loads (it uses PostgreSQL), is pinned to a patched release in `package.json` `resolutions`. Remove the pin once Prisma updates it.
+`mysql2`, which Prisma's CLI ships but Dossier never loads (it uses SQLite), is pinned to a patched release in `package.json` `resolutions`. Remove the pin once Prisma updates it.

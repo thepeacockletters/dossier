@@ -12,9 +12,9 @@ import { extractPosting, matchRequirements, tailorResume, writeCoverLetter, type
 
 // The whole chain against a real model, skipped unless asked for:
 //
-//   AI_LIVE=ollama docker/bin/yarn vitest run src/lib/ai/tasks/tasks.live.test.ts
-//   AI_LIVE=mistral docker/bin/yarn vitest run src/lib/ai/tasks/tasks.live.test.ts
-//   AI_LIVE=lmstudio docker/bin/yarn vitest run src/lib/ai/tasks/tasks.live.test.ts
+//   AI_LIVE=ollama yarn vitest run src/lib/ai/tasks/tasks.live.test.ts
+//   AI_LIVE=mistral yarn vitest run src/lib/ai/tasks/tasks.live.test.ts
+//   AI_LIVE=lmstudio yarn vitest run src/lib/ai/tasks/tasks.live.test.ts
 //
 // (Mistral's key and LM Studio's model as in providers.live.test.ts.)
 //

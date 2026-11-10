@@ -1,5 +1,5 @@
 # Dossier with Docker Compose (see the installation guide, https://github.com/AienTech/dossier/wiki). Save this
-# file as compose.yml in a folder of its own, put POSTGRES_PASSWORD,
+# file as compose.yml in a folder of its own, put
 # DOSSIER_PASSWORD (a hash of your password, from `docker run --rm -it
 # ghcr.io/aientech/dossier hash-password`) and DOSSIER_SECRET in a .env file
 # next to it, then:
@@ -9,30 +9,12 @@
 # Add COMPOSE_PROFILES=ai to .env to run Ollama for a local model as well.
 
 services:
-  db:
-    image: postgres:18-alpine
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: dossier
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
-      POSTGRES_DB: dossier
-    volumes:
-      # Postgres 18+ keeps data in a versioned subdirectory, so mount the parent.
-      - pgdata:/var/lib/postgresql
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U dossier -d dossier"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-
   app:
     image: ${DOSSIER_IMAGE:-ghcr.io/aientech/dossier:latest}
     restart: unless-stopped
-    depends_on:
-      db:
-        condition: service_healthy
     environment:
-      DATABASE_URL: postgresql://dossier:${POSTGRES_PASSWORD}@db:5432/dossier
+      # The data, on the data volume with the backups.
+      DATABASE_URL: file:/data/dossier.db
       DOSSIER_PASSWORD: ${DOSSIER_PASSWORD:?Set DOSSIER_PASSWORD in .env to a hash from hash-password}
       DOSSIER_SECRET: ${DOSSIER_SECRET:?Set DOSSIER_SECRET in .env}
       DOSSIER_BACKUP_RETENTION_DAYS: ${DOSSIER_BACKUP_RETENTION_DAYS:-}
@@ -83,6 +65,5 @@ services:
       - ollama:/root/.ollama
 
 volumes:
-  pgdata:
   data:
   ollama:

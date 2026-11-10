@@ -10,9 +10,9 @@ import { EMPTY_QUERY } from "./search";
 // skipped unless asked for. The Arbeitsagentur and FreeHire need no key;
 // Adzuna spends two calls from the day's allowance:
 //
-//   JOBS_LIVE=arbeitsagentur docker/bin/yarn vitest run src/lib/job-search/sources.live.test.ts
-//   JOBS_LIVE=adzuna ADZUNA_TEST_APP_ID=… ADZUNA_TEST_KEY=… docker/bin/yarn vitest run src/lib/job-search/sources.live.test.ts
-//   JOBS_LIVE=freehire docker/bin/yarn vitest run src/lib/job-search/sources.live.test.ts
+//   JOBS_LIVE=arbeitsagentur yarn vitest run src/lib/job-search/sources.live.test.ts
+//   JOBS_LIVE=adzuna ADZUNA_TEST_APP_ID=… ADZUNA_TEST_KEY=… yarn vitest run src/lib/job-search/sources.live.test.ts
+//   JOBS_LIVE=freehire yarn vitest run src/lib/job-search/sources.live.test.ts
 //
 // FreeHire's is freehire.me, or the self-hosted one DOSSIER_FREEHIRE_URL
 // names, on the command line or in `.env`.

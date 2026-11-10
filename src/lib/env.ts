@@ -46,17 +46,10 @@ const schema = z.object({
         `DOSSIER_SECRET is too short (${String(issue.input).length} characters). Use at least ${SECRET_MIN_LENGTH} random characters, ${GENERATE_SECRET}.`,
     }),
   ),
-  DATABASE_URL: required(
-    "DATABASE_URL",
-    "Set it to your PostgreSQL connection string, e.g. postgresql://user:password@host:5432/dossier, or to an SQLite file, e.g. file:/data/dossier.db.",
-  ).pipe(
-    // Never echo the value: it contains the database password.
+  DATABASE_URL: required("DATABASE_URL", "Set it to the SQLite file to keep your data in, e.g. file:/data/dossier.db.").pipe(
     z
       .string()
-      .regex(/^(postgres(ql)?:\/\/|file:)/, {
-        error:
-          "DATABASE_URL must be a PostgreSQL connection string starting with postgresql://, or an SQLite file starting with file:.",
-      })
+      .startsWith("file:", { error: "DATABASE_URL must be an SQLite file starting with file:, e.g. file:/data/dossier.db." })
       // A relative path would mean another file to the migrations, which run in another folder.
       .refine((url) => !url.startsWith("file:") || path.isAbsolute(url.slice("file:".length)), {
         error: "DATABASE_URL must give the SQLite file's full path, e.g. file:/data/dossier.db.",

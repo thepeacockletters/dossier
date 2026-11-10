@@ -10,7 +10,7 @@ const PASSWORD_HASH = "argon2id:m=19456,t=2,p=1:CLZW5wQoCjh3Q9CHBp_JWw:Ak2xS7TYl
 const valid = {
   DOSSIER_PASSWORD: PASSWORD_HASH,
   DOSSIER_SECRET: "a".repeat(32),
-  DATABASE_URL: "postgresql://postgres:postgres@db:5432/dossier",
+  DATABASE_URL: "file:/data/dossier.db",
 };
 
 function problems(source: Record<string, string | undefined>): string[] {
@@ -97,7 +97,10 @@ describe("parseEnv", () => {
   });
 
   it("takes an SQLite file as the database, by its full path", () => {
-    expect(parseEnv({ ...valid, DATABASE_URL: "file:/data/dossier.db" }).DATABASE_URL).toBe("file:/data/dossier.db");
+    expect(parseEnv(valid).DATABASE_URL).toBe("file:/data/dossier.db");
+    expect(problems({ ...valid, DATABASE_URL: "postgresql://localhost/dossier" })).toEqual([
+      "DATABASE_URL must be an SQLite file starting with file:, e.g. file:/data/dossier.db.",
+    ]);
     expect(problems({ ...valid, DATABASE_URL: "file:./dossier.db" })).toEqual([
       "DATABASE_URL must give the SQLite file's full path, e.g. file:/data/dossier.db.",
     ]);
@@ -125,7 +128,7 @@ describe("parseEnv", () => {
     expect(messages).not.toContain("hunter2");
     expect(messages).not.toContain("tiny-secret");
     expect(messages).not.toContain("db-password");
-    expect(messages).toMatch(/DATABASE_URL must be a PostgreSQL connection string/);
+    expect(messages).toMatch(/DATABASE_URL must be an SQLite file starting with file:/);
   });
 
   it("rejects invalid optional values", () => {

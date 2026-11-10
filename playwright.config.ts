@@ -1,3 +1,5 @@
+import "dotenv/config";
+
 import { defineConfig, devices } from "@playwright/test";
 
 import { APP_PORT, appEnv, FAKE_AI_PORT, FAKE_GOOGLE_PORT, FAKE_JOBS_PORT, STORAGE_STATE } from "./e2e/support";

@@ -44,7 +44,7 @@ test("opens by itself on a fresh install and walks through every step", async ({
   await page.getByRole("radio", { name: "Free and private" }).click();
   await page.getByRole("button", { name: "Find LM Studio" }).click();
   await expect(page.getByText("Dossier couldn't find LM Studio.")).toBeVisible({ timeout: 30_000 });
-  const [saved] = await sql<{ count: number }>(`SELECT count(*)::int AS count FROM "Setting" WHERE key = 'provider'`);
+  const [saved] = await sql<{ count: number }>(`SELECT count(*) AS count FROM "Setting" WHERE key = 'provider'`);
   expect(saved.count).toBe(0);
   await page.getByRole("link", { name: "Continue →" }).click();
 

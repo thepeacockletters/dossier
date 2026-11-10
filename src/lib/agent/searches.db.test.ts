@@ -7,11 +7,11 @@ import { EMPTY_QUERY, type FoundPosting } from "@/lib/job-search/search";
 import { loadSettings } from "@/lib/settings-data";
 import { postingStates } from "@/lib/postings";
 import * as postingsService from "@/lib/postings";
-import { createTestClient, resetDatabase, testsUseSqlite } from "@/test/db";
+import { createTestClient, resetDatabase } from "@/test/db";
 
 import { attributeAgentCandidates } from "./attribution";
 import { candidateData } from "./candidates";
-import { deleteAgentSearch, listAgentSearches, lockAgentSearches, saveAgentSearch, setAgentSearchEnabled } from "./searches";
+import { deleteAgentSearch, listAgentSearches, saveAgentSearch, setAgentSearchEnabled } from "./searches";
 
 vi.mock("@/lib/env", () => ({ env: { DOSSIER_SECRET: "s".repeat(32) } }));
 vi.mock("@/lib/prisma", () => ({ prisma: new Proxy({}, { get: (_, key) => Reflect.get(client, key) }) }));
@@ -183,42 +183,6 @@ describe("recurring Agent search storage", () => {
     } finally {
       states.mockRestore();
     }
-  });
-
-  // PostgreSQL's advisory lock, watched in pg_locks. SQLite runs one transaction at a time anyway.
-  it.skipIf(testsUseSqlite())("waits behind a replacement's shared lock before reading candidates or creating attribution", async () => {
-    const search = await saveAgentSearch(input, undefined, client);
-    await client.agentCandidate.create({ data: candidateData(posting("kept"), score) });
-    let release!: () => void;
-    let ready!: () => void;
-    const gate = new Promise<void>((resolve) => { release = resolve; });
-    const locked = new Promise<void>((resolve) => { ready = resolve; });
-    const replacing = client.$transaction(async (tx) => {
-      await lockAgentSearches(tx);
-      ready();
-      await gate;
-      // Same lock and deletion order as import/wipe.
-      await tx.agentCandidate.deleteMany();
-      await tx.agentSearch.deleteMany();
-    });
-    await locked;
-    const attributing = attributeAgentCandidates(search, [posting("kept")]);
-    try {
-      let waiting = false;
-      for (let attempt = 0; attempt < 100 && !waiting; attempt++) {
-        const [row] = await client.$queryRaw<{ waiting: boolean }[]>`SELECT EXISTS (
-          SELECT 1 FROM pg_locks WHERE locktype = 'advisory' AND objid = 621746001
-          AND database = (SELECT oid FROM pg_database WHERE datname = current_database()) AND NOT granted
-        ) AS waiting`;
-        waiting = row.waiting;
-        if (!waiting) await new Promise((resolve) => setTimeout(resolve, 10));
-      }
-      expect(waiting).toBe(true);
-    } finally {
-      release();
-      await Promise.all([replacing, attributing]);
-    }
-    expect(await client.agentCandidateSearch.count()).toBe(0);
   });
 
   it.each([1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const)("converts legacy agentQuery only for schema %i, without inventing past attribution", async (schemaVersion) => {

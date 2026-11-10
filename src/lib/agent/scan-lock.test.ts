@@ -1,32 +1,19 @@
-import { beforeEach, expect, it, vi } from "vitest";
+import { expect, it } from "vitest";
 
-import { withAgentScanLock } from "./scan-lock";
+import { isAgentScanRunning, withAgentScanLock } from "./scan-lock";
 
-const fake = vi.hoisted(() => ({
-  connect: vi.fn(async () => {}),
-  query: vi.fn(async () => ({ rows: [{ locked: true }] })),
-  end: vi.fn(async () => {}),
-}));
-vi.mock("pg", () => ({ Client: class {
-  on() {}
-  connect = fake.connect;
-  query = fake.query;
-  end = fake.end;
-} }));
-vi.mock("@/lib/log", () => ({ logServerError: vi.fn() }));
-beforeEach(() => { vi.clearAllMocks(); });
-
-it("cleans up failed connects, without masking the original connection error", async () => {
-  fake.connect.mockRejectedValueOnce(new Error("connect failed"));
-  fake.end.mockRejectedValueOnce(new Error("close failed too"));
-  const work = vi.fn(async () => "unused");
-  await expect(withAgentScanLock(work, "postgresql://unused")).rejects.toThrow("connect failed");
-  expect(fake.end).toHaveBeenCalledOnce();
-  expect(work).not.toHaveBeenCalled();
+it("holds the scan in this process: a second scan waits its turn (public PR 61)", async () => {
+  let release!: () => void;
+  const first = withAgentScanLock(() => new Promise<string>((resolve) => (release = () => resolve("first"))));
+  expect(await isAgentScanRunning()).toBe(true);
+  expect(await withAgentScanLock(async () => "second")).toBeNull();
+  release();
+  expect(await first).toBe("first");
+  expect(await isAgentScanRunning()).toBe(false);
+  expect(await withAgentScanLock(async () => "after")).toBe("after");
 });
 
-it("preserves evaluation errors when cleanup also fails", async () => {
-  fake.end.mockRejectedValueOnce(new Error("close failed"));
-  await expect(withAgentScanLock(async () => { throw new Error("evaluation failed"); }, "postgresql://unused")).rejects.toThrow("evaluation failed");
-  expect(fake.end).toHaveBeenCalledOnce();
+it("also releases ownership after an unexpected evaluation failure", async () => {
+  await expect(withAgentScanLock(async () => { throw new Error("interrupted"); })).rejects.toThrow("interrupted");
+  expect(await withAgentScanLock(async () => "next scan")).toBe("next scan");
 });

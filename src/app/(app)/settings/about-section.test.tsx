@@ -17,7 +17,7 @@ const ping: UsagePingView = { host: "telemetry.example.com", choice: "on", sourc
 const release = { version: "0.2.0", url: "https://github.com/AienTech/dossier/releases/tag/v0.2.0" };
 const facts = [
   { label: "Version", value: "0.1.0" },
-  { label: "Database", value: "PostgreSQL · 9.0 MB" },
+  { label: "Database", value: "SQLite · 9.0 MB" },
 ];
 
 beforeEach(() => vi.clearAllMocks());
@@ -27,8 +27,8 @@ describe("About (E10-9)", () => {
     render(<AboutSection facts={facts} usagePing={ping} updates={updates} />);
     expect(screen.getByRole("heading", { name: "About this install" })).toBeInTheDocument();
     expect(screen.getByText("Free and open source. No accounts, no subscriptions.")).toBeInTheDocument();
-    expect(screen.getAllByRole("definition").map((value) => value.textContent)).toEqual(["0.1.0", "PostgreSQL · 9.0 MB"]);
-    expect(screen.getByText("PostgreSQL · 9.0 MB")).toHaveClass("font-mono");
+    expect(screen.getAllByRole("definition").map((value) => value.textContent)).toEqual(["0.1.0", "SQLite · 9.0 MB"]);
+    expect(screen.getByText("SQLite · 9.0 MB")).toHaveClass("font-mono");
     expect(checkUpdates).not.toHaveBeenCalled();
   });
 

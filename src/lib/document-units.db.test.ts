@@ -1,6 +1,6 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { createTestClient, resetDatabase, testsUseSqlite } from "@/test/db";
+import { createTestClient, resetDatabase } from "@/test/db";
 
 import { updateDocuments } from "./document-units";
 
@@ -42,20 +42,6 @@ describe("updateDocuments", () => {
     // The letter wasn't touched.
     const letterAfter = await prisma().document.findUniqueOrThrow({ where: { applicationId_kind: { applicationId: "app-1", kind: "COVER_LETTER" } } });
     expect(letterAfter.updatedAt).toEqual(letterBefore.updatedAt);
-  });
-
-  // SQLite runs one transaction at a time: nobody else can save in between.
-  it.skipIf(testsUseSqlite())("starts over when a document changed in between, so nothing is overwritten unseen", async () => {
-    const seen: string[] = [];
-    await updateDocuments("app-1", async (documents) => {
-      const summary = documents.RESUME![0];
-      seen.push(summary.text);
-      // Someone else saves while this change is under way, once.
-      if (seen.length === 1) await prisma().document.update({ where, data: { units: [{ ...summary, text: "Theirs" }] } });
-      summary.text = `${summary.text} + mine`;
-    });
-    expect(seen).toEqual(["One", "Theirs"]);
-    expect((await prisma().document.findUniqueOrThrow({ where })).units).toEqual([{ id: "summary", label: "Summary", text: "Theirs + mine" }]);
   });
 
   it("writes nothing when the change fails", async () => {

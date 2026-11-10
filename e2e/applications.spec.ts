@@ -161,8 +161,9 @@ test("changes a status in the table", async ({ page }) => {
 test("keeps the board to the window, each column scrolling on its own", async ({ page }) => {
   await sql(
     `INSERT INTO "Application" (id, title, company, role, status, "updatedAt")
-     SELECT 'filler-' || n, 'Designer · Filler ' || n, 'Filler ' || n, 'Designer', 'SENT', now() - n * interval '1 hour'
-     FROM generate_series(1, 14) AS n`,
+     WITH RECURSIVE numbers(n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM numbers WHERE n < 14)
+     SELECT 'filler-' || n, 'Designer · Filler ' || n, 'Filler ' || n, 'Designer', 'SENT', strftime('%Y-%m-%dT%H:%M:%f+00:00', 'now', '-' || n || ' hours')
+     FROM numbers`,
   );
   await page.goto("/applications");
   const cards = column(page, "Sent").getByRole("list");

@@ -23,7 +23,7 @@ export async function applyStatusChange(
 ): Promise<StatusChangeResult> {
   return db.$transaction(async (tx) => {
     // Lock the row so two changes to the same application can't interleave:
-    // a write that changes nothing locks it in PostgreSQL and SQLite alike.
+    // a write that changes nothing locks it.
     await tx.$executeRaw`UPDATE "Application" SET id = id WHERE id = ${applicationId}`;
     const application = await tx.application.findUnique({
       where: { id: applicationId },

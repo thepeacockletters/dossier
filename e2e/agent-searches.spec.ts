@@ -169,8 +169,8 @@ test("all searches share scores/quota, retain partial source results and immutab
   expect(await fakeJobSearches()).toBe(before + 3);
   await expect(page.getByText("0 of 3 in the rolling 24-hour budget", { exact: true })).toBeVisible();
   await expect(page.getByText("Scored postings", { exact: true })).toBeVisible();
-  expect(await sql(`SELECT count(*)::int AS count FROM "AgentCandidate"`)).toEqual([{ count: 2 }]);
-  expect(await sql(`SELECT "searchName", count(*)::int AS count FROM "AgentCandidateSearch" GROUP BY "searchName" ORDER BY "searchName"`)).toEqual([{ searchName: "Design", count: 2 }, { searchName: "Overlap", count: 2 }]);
+  expect(await sql(`SELECT count(*) AS count FROM "AgentCandidate"`)).toEqual([{ count: 2 }]);
+  expect(await sql(`SELECT "searchName", count(*) AS count FROM "AgentCandidateSearch" GROUP BY "searchName" ORDER BY "searchName"`)).toEqual([{ searchName: "Design", count: 2 }, { searchName: "Overlap", count: 2 }]);
   await expect(page.getByText(/Unavailable: 0 found · 0 new to agent · Source request failed/)).toBeVisible();
   await expect(page.getByText(/Design: 3 found · 3 new to agent · Source request completed/)).toBeVisible();
   await expect(page.getByText(/Overlap: 3 found · 3 new to agent · Source request completed/)).toBeVisible();

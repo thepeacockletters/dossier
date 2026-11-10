@@ -3,7 +3,6 @@ import "server-only";
 import { Prisma, type PrismaClient } from "@/generated/prisma/client";
 import { encryptApiKey } from "@/lib/ai/api-key";
 import { agentSearchInputSchema, legacyAgentQuery, MAX_AGENT_SEARCHES } from "@/lib/agent/search";
-import { lockAgentSearches } from "@/lib/agent/searches";
 import { ActionError } from "@/lib/action";
 import { EXPORT_FORMAT, EXPORT_SCHEMA_VERSION, EXPORT_SCHEMA_VERSIONS, exportSchema, INSTALL_SETTINGS, SECRET_SETTINGS, type DossierExport } from "@/lib/data-export";
 import { encryptSecret, JOB_SOURCE_KEY } from "@/lib/secrets";
@@ -103,7 +102,6 @@ export async function importExport(db: PrismaClient, data: DossierExport): Promi
   });
   await db.$transaction(
     async (tx) => {
-      await lockAgentSearches(tx);
       // Out with the old. Applications take their history, documents, chat,
       // notes and jobs along; the other jobs (a resume import, postings read
       // for applications never created) hold the old data too.

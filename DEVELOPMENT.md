@@ -1,18 +1,24 @@
 # Developing Dossier
 
-Next.js 16 (App Router) + Prisma 7 + PostgreSQL 18, run with Docker Compose and Yarn 4. Nothing runs on the host: every command goes through the containers. For installing and running Dossier, see the [README](README.md); for how it's secured, [SECURITY.md](SECURITY.md).
+Next.js 16 (App Router) + Prisma 7 + SQLite, run with Node.js 24 and Yarn 4 on the host. For installing and running Dossier, see the [README](README.md); for how it's secured, [SECURITY.md](SECURITY.md).
 
 ## Getting started
 
 ```bash
+corepack enable                 # Yarn, at the version pinned in package.json
+yarn install
 cp .env.example .env
-docker compose build
-docker/bin/yarn hash-password   # set DOSSIER_PASSWORD in .env to what it prints
+yarn hash-password              # set DOSSIER_PASSWORD in .env to what it prints
 # set DOSSIER_SECRET (openssl rand -base64 32) in .env
-docker compose up
+# set DATABASE_URL to a file by its full path, e.g. file:/Users/you/dossier/data/dossier.db
+# set DOSSIER_DATA_DIR to a folder for backups, e.g. /Users/you/dossier/data
+yarn generate
+yarn prisma migrate deploy
+yarn prisma db seed
+yarn dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). Source is bind-mounted, so edits hot-reload.
+Open [http://localhost:3000](http://localhost:3000). `yarn dev` hot-reloads as you edit, and keeps its build in `.next/dev`, apart from a production build. `./data`, the usual home for the database file and backups, is ignored by git.
 
 `.env.example` documents every variable. The server refuses to start while `DOSSIER_PASSWORD` or `DOSSIER_SECRET` is missing, `DOSSIER_PASSWORD` isn't a password hash, or the secret is shorter than 32 characters, and logs which variable to fix.
 Server code reads configuration from the validated `env` object instead of `process.env`:
@@ -21,56 +27,30 @@ Server code reads configuration from the validated `env` object instead of `proc
 import { env } from "@/lib/env";
 ```
 
-On every start the `app` container runs `prisma generate`, `prisma migrate deploy`, then `next dev`.
-Postgres is also exposed on `localhost:5432` for host tools, using `DATABASE_URL` from `.env`.
-
-## Yarn
-
-Dependencies live in the container (a named `node_modules` volume), not on the host.
-Run yarn through `docker/bin/yarn`, which uses the running `app` container or, if it's stopped, a one-off one:
-
-```bash
-docker/bin/yarn add <package>
-docker/bin/yarn install   # after pulling changes to yarn.lock
-docker/bin/yarn lint
-```
+After pulling changes, run `yarn install`, `yarn generate` and `yarn prisma migrate deploy` before `yarn dev`.
 
 ## Database
 
-Define models in `prisma/schema.prisma`, then create and apply a migration:
+Dossier keeps its data in one SQLite file, named by `DATABASE_URL` (`file:` and the file's full path). `src/lib/database.ts` makes the client.
+
+Define models in `prisma/schema.prisma`, then create and apply a migration, and regenerate the client:
 
 ```bash
-docker/bin/yarn prisma migrate dev --name <migration-name>
-docker compose restart app
+yarn prisma migrate dev --name <migration-name>
+yarn generate
 ```
 
-The restart regenerates the Prisma Client and picks it up; since Prisma 7, `migrate dev` no longer runs `prisma generate` on its own.
+Since Prisma 7, `migrate dev` no longer runs `prisma generate` on its own; restart `yarn dev` afterwards. A test checks that the migrations make exactly the schema.
 
-### SQLite
+Keep to what SQLite does:
 
-Dossier also runs on an SQLite file, when `DATABASE_URL` is one (`file:/data/dossier.db`), for a single container without a database server. `src/lib/database.ts` picks the client, and `prisma7.config.ts` the schema and migrations, from `DATABASE_URL`. The SQLite schema, `prisma/sqlite/schema.prisma`, is made from `prisma/schema.prisma`, which stays the only one to edit. After changing it, update the SQLite schema and make its migration too:
+- No `skipDuplicates` and no `SELECT … FOR UPDATE`: lock a row with a write that changes nothing, `UPDATE "Application" SET id = id WHERE id = …`.
+- Inside `prisma.$transaction(async (tx) => …)`, query through `tx` only. SQLite has one connection, so a query through `prisma` waits until the transaction ends, and the transaction times out. Transactions run one at a time, so they need no locks of their own.
+- Enums sort by name, not in the order they're declared.
+- What Prisma doesn't manage is added to the migrations by hand: the built-in themes' delete trigger, and `COLLATE NOCASE` for the unique Skill and Language names. NOCASE only ignores the case of ASCII letters.
+- SQLite can't change most columns in place, so for those Prisma's migration rebuilds the table: it creates `new_<Table>`, copies the rows, drops the old table and renames the new one. That drops the trigger (on Theme) and `COLLATE NOCASE` (on Skill and Language) too. When a migration rebuilds one of these tables, add them back by hand: `COLLATE NOCASE` in its `CREATE TABLE`, and the trigger after the rename, as in `prisma/migrations/20261102120000_init/migration.sql`. The database tests fail when one is missing.
 
-```bash
-docker/bin/yarn sqlite-schema
-docker/bin/yarn prisma migrate dev --name <migration-name>                                                   # PostgreSQL
-docker compose exec -e DATABASE_URL=file:/app/data/dev.db app yarn prisma migrate dev --name <migration-name> # SQLite
-```
-
-`yarn generate` makes both clients (the container does it on start). The code uses the PostgreSQL client's types for both, so keep to what both databases do:
-
-- No `skipDuplicates` (SQLite doesn't have it) and no `SELECT … FOR UPDATE`: lock a row with a write that changes nothing, `UPDATE "Application" SET id = id WHERE id = …`, which works in both.
-- Inside `prisma.$transaction(async (tx) => …)`, query through `tx` only. SQLite has one connection, so a query through `prisma` waits until the transaction ends, and the transaction times out.
-- SQLite sorts enums by name, PostgreSQL in the order they're declared.
-- What Prisma doesn't manage is added to both migrations by hand: the built-in themes' delete trigger, and `COLLATE NOCASE` for the unique Skill and Language names (citext in PostgreSQL). SQLite's NOCASE only ignores the case of ASCII letters.
-- SQLite can't change most columns in place, so for those Prisma's migration rebuilds the table: it creates `new_<Table>`, copies the rows, drops the old table and renames the new one. That drops the trigger (on Theme) and `COLLATE NOCASE` (on Skill and Language) too. When a migration rebuilds one of these tables, add them back by hand: `COLLATE NOCASE` in its `CREATE TABLE`, and the trigger after the rename, as in `prisma/sqlite/migrations/20261102120000_init/migration.sql`. The database tests on SQLite fail when one is missing.
-- `yarn lint` refuses `skipDuplicates`, and a test checks that the SQLite migrations make exactly the SQLite schema.
-
-To browse and edit rows in Prisma Studio, start it on demand (plain `docker compose up` leaves it off) and open [http://localhost:5555](http://localhost:5555):
-
-```bash
-docker compose up -d studio
-docker compose stop studio   # when you're done
-```
+To browse and edit rows, run `yarn prisma studio` and open [http://localhost:5555](http://localhost:5555). It has no sign-in and can edit every row, so stop it when you're done.
 
 Query the database from server code with the shared client:
 
@@ -83,11 +63,11 @@ Change an application's status only through `setStatus` in `src/lib/status-actio
 
 ### Seed data
 
-Each start runs `prisma db seed`, which creates the six built-in themes, an empty profile and default settings. It never overwrites your profile or settings. To load the prototype's sample data (Jane Doe and nine applications):
+`yarn prisma db seed` creates the six built-in themes, an empty profile and default settings. It never overwrites your profile or settings. To load the prototype's sample data (Jane Doe and nine applications):
 
 ```bash
-docker/bin/yarn prisma db seed -- --demo           # refuses if you already have a profile or applications
-docker/bin/yarn prisma db seed -- --demo --reset   # deletes your profile and applications first
+yarn prisma db seed -- --demo           # refuses if you already have a profile or applications
+yarn prisma db seed -- --demo --reset   # deletes your profile and applications first
 ```
 
 ## Mutations and private routes
@@ -144,13 +124,13 @@ Both get the session from `getSession()` in `src/lib/auth/session.ts` (see [Sign
 
 Dossier has one user and no accounts: you sign in with the password that `DOSSIER_PASSWORD` is a hash of. The session is an encrypted token (JWE, keyed from `DOSSIER_SECRET`) in an HttpOnly, SameSite=Lax cookie, so nothing is stored on the server. It lasts until the browser closes, but at most 24 hours; with "Keep me signed in", 30 days.
 
-The hash is argon2id with OWASP's settings (19 MiB, 2 passes, 1 lane) from Node's own `crypto.argon2`, made by `docker/bin/yarn hash-password` (`scripts/hash-password.ts`, which the image bundles as the `hash-password` command). Checking a password against it is in `src/lib/auth/password-hash.ts`, and `src/lib/env.ts` refuses anything that isn't a hash. It's written as `argon2id:m=19456,t=2,p=1:<salt>:<hash>` rather than the usual `$argon2id$v=19$…`, because Next.js and Docker Compose expand `$` in `.env` files, even inside quotes. The settings are part of each hash, so stronger ones can come later without breaking existing hashes.
+The hash is argon2id with OWASP's settings (19 MiB, 2 passes, 1 lane) from Node's own `crypto.argon2`, made by `yarn hash-password` (`scripts/hash-password.ts`, which the image bundles as the `hash-password` command). Checking a password against it is in `src/lib/auth/password-hash.ts`, and `src/lib/env.ts` refuses anything that isn't a hash. It's written as `argon2id:m=19456,t=2,p=1:<salt>:<hash>` rather than the usual `$argon2id$v=19$…`, because Next.js and Docker Compose expand `$` in `.env` files, even inside quotes. The settings are part of each hash, so stronger ones can come later without breaking existing hashes.
 
 Sign out from the sidebar ends the session in that browser. To sign out everywhere, set `DOSSIER_PASSWORD` to a new hash (even of the same password, since each has its own salt) or rotate `DOSSIER_SECRET` and restart: every session carries a fingerprint of the password and is encrypted with a key from the secret, so all existing sessions stop working. Rotating the secret also means API keys saved in Settings have to be entered again, since they're encrypted with it too.
 
 In server code, `getSession()` returns the session or null, and `verifySession()` (for pages and layouts) sends the visitor to `/login` when there is none. `action()` and `route()` already check it.
 
-Failed sign-ins are rate-limited in Postgres: after 5 failures within a minute from one IP, attempts are refused for 30 seconds, then 60, 120 and so on up to 15 minutes. The IP is the last `X-Forwarded-For` entry, which is the real client behind a reverse proxy but can be faked when the app is exposed directly, so 30 failures within 10 minutes from all IPs together also trigger the backoff. If you lock yourself out while developing, clear the counters with `docker compose exec db psql -U postgres -d dossier -c 'DELETE FROM "LoginThrottle"'`.
+Failed sign-ins are rate-limited in the database: after 5 failures within a minute from one IP, attempts are refused for 30 seconds, then 60, 120 and so on up to 15 minutes. The IP is the last `X-Forwarded-For` entry, which is the real client behind a reverse proxy but can be faked when the app is exposed directly, so 30 failures within 10 minutes from all IPs together also trigger the backoff. If you lock yourself out while developing, clear the counters with `DELETE FROM "LoginThrottle"` in `yarn prisma studio`, or `sqlite3 data/dossier.db 'DELETE FROM "LoginThrottle"'`.
 
 ## AI provider
 
@@ -162,19 +142,12 @@ Long AI tasks run as background jobs (`src/lib/jobs`): the page follows their na
 
 The Usage screen shows the tokens each task used, as the servers counted them. Every request names its task (`task`, one of `USAGE_TASKS` in `src/lib/usage.ts`, where a new task gets its label), and a provider passes each answer's counts to `call.used`, null where the server sends none. That includes answers it asks again and answers that end in an error, since those used tokens too. Nothing of the prompt or the answer is kept.
 
-To try the AI features without a hosted provider, run a small model in Docker:
-
-```bash
-docker compose up -d ollama
-docker compose exec ollama ollama pull qwen2.5:3b   # about 2 GB
-```
-
-Then pick Local model in Settings with the address `http://ollama:11434` (inside Docker, `localhost` is the app's own container). The Ollama image takes about 9 GB of disk, and a 3B model about 3 GB of memory while it runs; `docker compose stop ollama` when you're done.
+To try the AI features without a hosted provider, run a small model with [Ollama](https://ollama.com) (`ollama pull qwen2.5:3b`, about 2 GB) and pick Local model in Settings with the address `http://localhost:11434`.
 
 The tests use a mock provider. To check the providers and prompts against real models, run the live tests, which are skipped otherwise:
 
 ```bash
-docker compose exec -e AI_LIVE=ollama app yarn vitest run src/lib/ai/providers.live.test.ts src/lib/ai/tasks/tasks.live.test.ts
+AI_LIVE=ollama yarn vitest run src/lib/ai/providers.live.test.ts src/lib/ai/tasks/tasks.live.test.ts
 ```
 
 `AI_LIVE=mistral` checks Mistral instead, with the key saved in Settings → AI provider while Mistral is chosen there, or with `DOSSIER_AI_KEY` (and `DOSSIER_AI_MODEL`) passed with `-e`.
@@ -195,10 +168,10 @@ Find jobs (`/jobs`) searches the job source chosen in Settings → Job search: J
 The tests use answers in each source's shape (`src/test/job-search-fixtures.ts`). The live tests check the real services, and are skipped otherwise. JSearch and Adzuna spend searches from your plan; the Arbeitsagentur and FreeHire are free:
 
 ```bash
-docker compose exec -e JOBS_LIVE=jsearch -e JSEARCH_TEST_KEY=… app yarn vitest run src/lib/job-search/jsearch.live.test.ts
-docker compose exec -e JOBS_LIVE=arbeitsagentur app yarn vitest run src/lib/job-search/sources.live.test.ts
-docker compose exec -e JOBS_LIVE=adzuna -e ADZUNA_TEST_APP_ID=… -e ADZUNA_TEST_KEY=… app yarn vitest run src/lib/job-search/sources.live.test.ts
-docker compose exec -e JOBS_LIVE=freehire app yarn vitest run src/lib/job-search/sources.live.test.ts
+JOBS_LIVE=jsearch JSEARCH_TEST_KEY=… yarn vitest run src/lib/job-search/jsearch.live.test.ts
+JOBS_LIVE=arbeitsagentur yarn vitest run src/lib/job-search/sources.live.test.ts
+JOBS_LIVE=adzuna ADZUNA_TEST_APP_ID=… ADZUNA_TEST_KEY=… yarn vitest run src/lib/job-search/sources.live.test.ts
+JOBS_LIVE=freehire yarn vitest run src/lib/job-search/sources.live.test.ts
 ```
 
 ## Scoring
@@ -210,8 +183,8 @@ Jev answers typed questions and writes no text, so `jev.ts` asks, in one request
 The live tests ask the real Jev with the key saved in Settings → Scoring, or `DOSSIER_TYPESAFE_KEY`, and spend tokens on that account. `check` scores two postings against the demo profile; `compare` scores the job agent's latest 40 candidates again, against the profile in the database, and prints Jev's scores next to the AI model's, what was done with each posting, and the weights that would come closest to the AI model's scores. To compare on your own data, import an export of it into the development app first (Settings → Your data, which backs up what's there):
 
 ```bash
-docker compose exec -e JEV_LIVE=check app yarn vitest run src/lib/scoring/jev.live.test.ts
-docker compose exec -e JEV_LIVE=compare app yarn vitest run src/lib/scoring/jev.live.test.ts
+JEV_LIVE=check yarn vitest run src/lib/scoring/jev.live.test.ts
+JEV_LIVE=compare yarn vitest run src/lib/scoring/jev.live.test.ts
 ```
 
 ## Your data
@@ -279,37 +252,36 @@ A view showing a server has no preload and is treated as any web page: other sit
 
 ## Tests and checks
 
-Tests use [Vitest](https://vitest.dev) and run inside the container like everything else:
+Tests use [Vitest](https://vitest.dev). They read `.env` and run in UTC:
 
 ```bash
-docker/bin/yarn test          # run all tests once
-docker/bin/yarn test:watch    # re-run tests on change
-docker/bin/yarn test:coverage # run once with coverage (report in coverage/index.html)
-docker/bin/yarn lint
-docker/bin/yarn typecheck     # generates Next.js route types, then runs tsc
+yarn test          # run all tests once
+yarn test:watch    # re-run tests on change
+yarn test:coverage # run once with coverage (report in coverage/index.html)
+yarn lint
+yarn typecheck     # generates Next.js route types, then runs tsc
 ```
 
 Put tests next to the code they cover. `*.test.ts` files run in Node (server code, pure logic);
 `*.test.tsx` files run in jsdom with [Testing Library](https://testing-library.com) and its `jest-dom` matchers (components and hooks).
-`*.db.test.ts` files run against a real Postgres database: `dossier_test` on the same server (or `TEST_DATABASE_URL`), which is created and migrated at the start of each run, and which each test empties with `resetDatabase()` from `src/test/db.ts`.
-They refuse to run against a database whose name doesn't end in `_test`, so your development data is never touched.
-With an SQLite `DATABASE_URL`, they run against the file next to it with `_test` added to its name (`file:/app/data/dev_test.db`).
+`*.db.test.ts` files run against a real database: the file next to `DATABASE_URL`'s with `_test` added to its name (`data/dossier_test.db`), or `TEST_DATABASE_URL`, which is created and migrated at the start of each run, and which each test empties with `resetDatabase()` from `src/test/db.ts`.
+They refuse to run against a file whose name doesn't end in `_test`, so your development data is never touched.
 
-GitHub Actions (`.github/workflows/ci.yml`) runs lint, type-check and tests with coverage, with a Postgres service for the database tests (then runs those again on SQLite), on release branches (`release/1.12.0`), when one is pushed and on each push after that, and shows the coverage in the job summary. A newer push to the same branch cancels the run it replaces. Nothing else runs them: pull requests aren't checked, so run the checks yourself before you open one. The public repository has no release branches: `image.yml` runs the same jobs there after each merge or publish to `main`, before it builds the image. The coverage thresholds in `vitest.config.mts` ratchet: they sit a few points below the coverage when they were set, and CI fails if coverage drops below them. Raise them when you add tests.
+GitHub Actions (`.github/workflows/ci.yml`) runs lint, type-check and tests with coverage, on release branches (`release/1.12.0`), when one is pushed and on each push after that, and shows the coverage in the job summary. A newer push to the same branch cancels the run it replaces. Nothing else runs them: pull requests aren't checked, so run the checks yourself before you open one. The public repository has no release branches: `image.yml` runs the same jobs there after each merge or publish to `main`, before it builds the image. The coverage thresholds in `vitest.config.mts` ratchet: they sit a few points below the coverage when they were set, and CI fails if coverage drops below them. Raise them when you add tests.
 
 ### End-to-end tests
 
 [Playwright](https://playwright.dev) tests in `e2e/` click through the main flows in headless Chromium: signing in, the profile, the theme builder and PDFs, finding a job and applying from it, a new application, refining and undoing, the application email, the board and table, the dashboard, and export, delete and import. `e2e/accessibility.spec.ts` runs [axe](https://github.com/dequelabs/axe-core) on every screen and its open menus and dialogs (no serious or critical WCAG 2.2 AA violations allowed) and checks where keyboard focus goes. They run against a production build, on the standalone server the image uses, so build first:
 
 ```bash
-docker/bin/yarn build && docker/bin/yarn test:e2e
+yarn build && yarn test:e2e
 ```
 
-The run starts its own server on port 3100 with a separate `dossier_e2e` database (created and migrated on the way, reset to the demo data before the specs that change data), a fake OpenAI-compatible server on port 3999 (`e2e/fake-ai.mts`) that answers each AI task with plausible output, fake job sources on port 3998 (`e2e/fake-jobs.mts`), which the app reaches through `DOSSIER_JOBS_TEST_BASE_URL`, a variable for the tests only, and a fake Google on port 3997 (`e2e/fake-google.mts`) for sign-in, Gmail and Calendar (`DOSSIER_GOOGLE_TEST_BASE_URL`), which only comes into play once a spec enters an OAuth client in Settings → Google. The daily update check asks the same fake instead of GitHub (`DOSSIER_UPDATES_TEST_BASE_URL`), which says no release is out, so a spec can store the latest release itself, and so does Jev (`DOSSIER_TYPESAFE_TEST_BASE_URL`), with answers made from the questions. The same fake answers for the project's backend (`DOSSIER_API_URL`), with no notices until a spec says otherwise. Your development server and data are never touched: the tests refuse any database whose name doesn't end in `_e2e`. CI runs them in a job of their own and keeps the report of a failed run as an artifact.
+The run starts its own server on port 3100 with a separate `dossier_e2e.db` database next to yours (created and migrated on the way, reset to the demo data before the specs that change data), a fake OpenAI-compatible server on port 3999 (`e2e/fake-ai.mts`) that answers each AI task with plausible output, fake job sources on port 3998 (`e2e/fake-jobs.mts`), which the app reaches through `DOSSIER_JOBS_TEST_BASE_URL`, a variable for the tests only, and a fake Google on port 3997 (`e2e/fake-google.mts`) for sign-in, Gmail and Calendar (`DOSSIER_GOOGLE_TEST_BASE_URL`), which only comes into play once a spec enters an OAuth client in Settings → Google. The daily update check asks the same fake instead of GitHub (`DOSSIER_UPDATES_TEST_BASE_URL`), which says no release is out, so a spec can store the latest release itself, and so does Jev (`DOSSIER_TYPESAFE_TEST_BASE_URL`), with answers made from the questions. The same fake answers for the project's backend (`DOSSIER_API_URL`), with no notices until a spec says otherwise. Your development server and data are never touched: the tests refuse any database whose name doesn't end in `_e2e`. CI runs them in a job of their own and keeps the report of a failed run as an artifact.
 
 ## The production image
 
-The `Dockerfile`'s last stage is the production image (the `dev` stage is what Compose runs here). It holds the standalone Next.js server, Playwright's Chromium for PDFs, and Prisma's CLI for migrations, runs as `node`, and starts with `docker/start.sh`: `prisma migrate deploy`, the seed (compiled with esbuild at build time), then the server. To build and try it next to the development stack:
+The `Dockerfile` makes the production image. It holds the standalone Next.js server, Playwright's Chromium for PDFs, and Prisma's CLI for migrations, runs as `node`, and starts with `docker/start.sh`: `prisma migrate deploy`, the seed (compiled with esbuild at build time), then the server. To build and try it with Docker:
 
 ```bash
 docker build -t dossier:local .
@@ -320,12 +292,10 @@ In the public repository, `image.yml` pushes an image for every commit on `main`
 
 ## The website
 
-`site/` is the project's website, plain HTML, CSS and a little JavaScript. `site/build.sh` puts it together in `_site/` with the README's screenshots (`.github/images/`), the app's icons and three of its fonts, so there's one copy of each. To look at it, serve `_site/` with any static server, for example `docker run --rm -p 8080:80 -v "$PWD/_site:/usr/share/nginx/html:ro" nginx:alpine`, then open http://localhost:8080. The public repository's Pages workflow publishes it when any of those change on `main`, and once a day. When the README's screenshots change, the site's change with them.
+`site/` is the project's website, plain HTML, CSS and a little JavaScript. `site/build.sh` puts it together in `_site/` with the README's screenshots (`.github/images/`), the app's icons and three of its fonts, so there's one copy of each. To look at it, serve `_site/` with any static server, for example `npx serve _site`. The public repository's Pages workflow publishes it when any of those change on `main`, and once a day. When the README's screenshots change, the site's change with them.
 
 The number above the hero's buttons is the Docker image's download count. GitHub's API has no download counts for `ghcr.io`, so `build.sh` reads it from the package page (the `title` of the number under "Total downloads") and writes it into `_site/index.html`, rounded down. The daily run keeps it current. If the page can't be read (you're offline, or GitHub changed its markup), the build prints a warning and keeps the floor written in `site/index.html`. Raise that floor now and then, and update the `sed` in `build.sh` if the warning keeps coming.
 
 ## Reset
 
-```bash
-docker compose down -v   # stops everything and deletes the database and node_modules volumes
-```
+Stop the server and delete the database file (and its `-journal`, if there is one), then run `yarn prisma migrate deploy` and `yarn prisma db seed` again.

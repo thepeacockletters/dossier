@@ -1,16 +1,11 @@
 import "server-only";
 
-import { lockForTransaction } from "@/lib/db-lock";
 import { prisma } from "@/lib/prisma";
 import { formatDateTime } from "@/lib/dates";
 import { AGENT_MAX_SOURCE_REQUESTS_PER_DAY } from "./limits";
 import { AGENT_RUNS_KEPT, settingsFromRows, type AgentRun, type AgentSearchRun } from "@/lib/settings";
 
 /** Serializes the run ledger's writes (public PR 61). */
-const RUNS_LOCK = 621746002;
-
-/** Source-request slots, not runs. Failed requests consume slots too. */
-export { AGENT_MAX_SOURCE_REQUESTS_PER_DAY } from "./limits";
 export const AGENT_MANUAL_INTERVAL_MS = 60 * 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -46,7 +41,6 @@ export function nextSourceBudgetAt(runs: readonly AgentRun[], now: Date, request
  */
 export async function reconcileInterruptedRuns(): Promise<void> {
   await prisma.$transaction(async (tx) => {
-    await lockForTransaction(tx, RUNS_LOCK);
     const runs = settingsFromRows(await tx.setting.findMany({ where: { key: "agentRuns" } })).agentRuns;
     if (!runs.some((run) => run.message === null)) return;
     for (const run of runs) {
@@ -75,7 +69,6 @@ export function runLimitProblem(runs: readonly AgentRun[], now: Date, { manual, 
 export async function reserveRun(now: Date, manual: boolean, requests: number, timeZone = "UTC"): Promise<AgentRun | string> {
   if (!Number.isInteger(requests) || requests < 1 || requests > AGENT_MAX_SOURCE_REQUESTS_PER_DAY) throw new Error("Invalid Agent source reservation");
   return prisma.$transaction(async (tx) => {
-    await lockForTransaction(tx, RUNS_LOCK);
     const runs = settingsFromRows(await tx.setting.findMany({ where: { key: "agentRuns" } })).agentRuns;
     const problem = runLimitProblem(runs, now, { manual, requests, timeZone });
     if (problem) return problem;
@@ -89,7 +82,6 @@ export async function reserveRun(now: Date, manual: boolean, requests: number, t
 /** Persist immediately before dispatch, including requests that will fail. */
 export async function recordSourceRequest(run: AgentRun, index: number, now: Date): Promise<void> {
   await prisma.$transaction(async (tx) => {
-    await lockForTransaction(tx, RUNS_LOCK);
     const runs = settingsFromRows(await tx.setting.findMany({ where: { key: "agentRuns" } })).agentRuns;
     const entry = runs.find((entry) => entry.at === run.at);
     if (!entry || index < 0 || index >= (entry.sourceRequests ?? 1)) throw new Error("Agent source reservation no longer exists");
@@ -103,7 +95,6 @@ export async function recordSourceRequest(run: AgentRun, index: number, now: Dat
 /** Update under the same lock as admission so concurrent writers can't lose slots. */
 export async function recordRunEnd(run: AgentRun, message: string | null, searches?: AgentSearchRun[]): Promise<void> {
   await prisma.$transaction(async (tx) => {
-    await lockForTransaction(tx, RUNS_LOCK);
     const runs = settingsFromRows(await tx.setting.findMany({ where: { key: "agentRuns" } })).agentRuns;
     const value = JSON.stringify(runs.map((entry) => entry.at === run.at ? { ...entry, message, ...(searches ? { searches } : {}) } : entry));
     await tx.setting.upsert({ where: { key: "agentRuns" }, create: { key: "agentRuns", value }, update: { value } });

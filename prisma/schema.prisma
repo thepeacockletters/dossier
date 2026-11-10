@@ -1,7 +1,9 @@
-// Dossier's data model (PRD §9). After editing, run
-// `docker/bin/yarn prisma migrate dev --name <name>` and `docker compose restart app`.
+// Dossier's data model (PRD §9), in SQLite. After editing, run
+// `yarn prisma migrate dev --name <name>` (see DEVELOPMENT.md).
 //
 // Conventions:
+// - The unique Skill and Language names compare without case through
+//   COLLATE NOCASE, which the migrations add by hand.
 // - The profile's basics and the settings are key-value tables (ProfileField,
 //   Setting): one text row per key, and a missing key means empty or the
 //   default. Code maps the keys to typed fields (src/lib/profile.ts,
@@ -16,7 +18,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
 }
 
 // ─── Profile (E2-1) ──────────────────────────────────────────────────────────
@@ -33,7 +35,7 @@ model ProfileField {
 model Skill {
   id          String            @id @default(cuid())
   /// Unique ignoring case ("Figma" and "figma" are the same skill).
-  name        String            @unique @db.Citext
+  name        String            @unique
   sort        Int               @default(0)
   /// The group it's printed under on resumes ("Technical SEO"); empty for none (#280).
   group       String            @default("")
@@ -55,7 +57,7 @@ enum LanguageLevel {
 model Language {
   id        String        @id @default(cuid())
   /// Unique ignoring case; adding an existing language updates its level (PRO-4).
-  name      String        @unique @db.Citext
+  name      String        @unique
   level     LanguageLevel
   sort      Int           @default(0)
   createdAt DateTime      @default(now())
@@ -475,7 +477,7 @@ model Application {
   /// Work mode as written in the posting, e.g. "Hybrid · 3 days in office".
   mode                String            @default("")
   salary              String            @default("")
-  deadline            DateTime?         @db.Date
+  deadline            DateTime?        
   /// Saved, not fetched (NEW-1).
   postingUrl          String            @default("")
   postingText         String            @default("")

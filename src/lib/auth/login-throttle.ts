@@ -94,8 +94,8 @@ type Change = { before: ThrottleState | null; after: ThrottleState };
 
 /**
  * The row for `key`, created when there's none, and locked with a write that
- * changes nothing, so concurrent attempts take turns (in PostgreSQL and SQLite
- * alike). Null while it holds no failures.
+ * changes nothing, so concurrent attempts take turns. Null while it holds no
+ * failures.
  */
 async function lockedRow(tx: Tx, key: string, now: Date): Promise<ThrottleState | null> {
   await tx.$executeRaw`
