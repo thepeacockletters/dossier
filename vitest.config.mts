@@ -1,5 +1,11 @@
+import "dotenv/config";
+
 import react from "@vitejs/plugin-react";
 import { configDefaults, defineConfig } from "vitest/config";
+
+// Tests run on the host, so they read DATABASE_URL from .env, and dates are
+// formatted as on the server, in UTC, whatever the machine's own zone.
+process.env.TZ = "UTC";
 
 export default defineConfig({
   plugins: [react()],
