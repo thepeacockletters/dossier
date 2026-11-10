@@ -15,8 +15,6 @@ export const USAGE_TASKS = [
   { task: "write-email", label: "Writing emails", hint: "The email to send with an application" },
   { task: "regenerate-unit", label: "Rewriting parts", hint: "One part of a resume or letter, written again" },
   { task: "refine-chat", label: "Refining in chat", hint: "Changes you ask for in an application's chat" },
-  { task: "classify-reply", label: "Reading replies", hint: "Employers' mail from Gmail, read in the background" },
-  { task: "draft-reply", label: "Drafting answers", hint: "Your answers to employers' replies" },
   { task: "connection-check", label: "Connection checks", hint: "Test connection in Settings" },
 ] as const;
 

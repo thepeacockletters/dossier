@@ -31,7 +31,6 @@ describe("NavLinks", () => {
       "Find jobs",
       "Agent",
       "Applications",
-      "Inbox",
       "Usage",
       "Settings",
     ]);

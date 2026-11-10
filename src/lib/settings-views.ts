@@ -10,10 +10,7 @@ import { loadGoogleClientConfig } from "@/lib/google/oauth";
 
 /** The connection as the Google section shows it: never a token. */
 export async function googleView() {
-  const connection = await googleConnection();
-  if (connection.status !== "connected") return connection;
-  const { lastSyncAt, ...rest } = connection;
-  return { ...rest, lastSync: whenRan(lastSyncAt) };
+  return googleConnection();
 }
 
 /** The OAuth client as the Google section shows it: the ID, never the secret. */

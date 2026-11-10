@@ -16,7 +16,6 @@ import { resumeFitSchema } from "@/lib/resume-fit";
 import { emailJobKey } from "@/lib/jobs/write-email";
 import { googleConnection } from "@/lib/google/account";
 import { pullInterviewEvents } from "@/lib/google/availability";
-import { loadConversation } from "@/lib/google/inbox-data";
 import { readFrozenCopy } from "@/lib/frozen-copy";
 import { profileUpdate } from "@/lib/profile-update";
 import { refineSuggestions } from "@/lib/refine-suggestions";
@@ -47,7 +46,7 @@ export async function generateMetadata({ params }: PageProps<"/applications/[id]
 export default async function ApplicationPage({ params, searchParams }: PageProps<"/applications/[id]">) {
   const [{ id }, { tab }] = await Promise.all([params, searchParams]);
   await pullCalendar(id);
-  const [{ application, profile, liveProfile, sent, settings, extracted, resume, letter, email, includeReferences, sections, ownSections, letterDate }, aiReady, unitJobs, refineJobs, emailJobs, timeZone, google, emails, themes, resumeJobs, letterJobs, scoreJobs] =
+  const [{ application, profile, liveProfile, sent, settings, extracted, resume, letter, email, includeReferences, sections, ownSections, letterDate }, aiReady, unitJobs, refineJobs, emailJobs, timeZone, google, themes, resumeJobs, letterJobs, scoreJobs] =
     await Promise.all([
       loadDocuments(id),
       isAiConfigured(),
@@ -56,7 +55,6 @@ export default async function ApplicationPage({ params, searchParams }: PageProp
       findUnfinishedJobs(emailJobKey(id)),
       userTimeZone(),
       googleConnection(),
-      loadConversation(id),
       loadThemes(),
       findUnfinishedJobs(writeDocumentJobKey(id, "RESUME")),
       findUnfinishedJobs(writeDocumentJobKey(id, "COVER_LETTER")),
@@ -126,7 +124,7 @@ export default async function ApplicationPage({ params, searchParams }: PageProp
       scoringResume={scoreJobs.at(-1)?.id ?? null}
       attachments={{ resume: resume ? fileName("RESUME") : null, letter: letter ? fileName("COVER_LETTER") : null }}
       gmail={
-        google.status === "not-configured" && emails.length === 0
+        google.status === "not-configured"
           ? undefined
           : {
               sender:
@@ -134,10 +132,8 @@ export default async function ApplicationPage({ params, searchParams }: PageProp
                   ? google.canSend
                     ? { from: google.email }
                     : { from: null, reason: "no-permission" }
-                  : { from: null, reason: google.status === "not-configured" ? "not-configured" : "not-connected" },
+                  : { from: null, reason: "not-connected" },
               sentBefore: application.emailThreadId !== null,
-              emails,
-              reading: google.status === "connected" && google.canRead && settings.gmailRead,
             }
       }
       profile={profile}

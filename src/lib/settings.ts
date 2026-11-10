@@ -207,28 +207,14 @@ export const settingsSchema = z.object({
   googleClientId: z.string().nullable().catch(null),
   /** Encrypted like the API keys (GOOGLE_CLIENT_SECRET); never sent to the client. */
   googleClientSecretEnc: z.string().nullable().catch(null),
-  /** Read replies from Gmail. */
-  gmailRead: flag(true),
-  /** Which mail the inbox check reads: only threads Dossier knows and company domains, or every new mail. */
-  gmailScope: z.enum(["known", "all"]).catch("known"),
-  /** Minutes between inbox checks. */
-  gmailInterval: z.coerce.number().int().min(5).max(120).catch(10),
-  /** Look in the calendar for free times when an employer asks to meet. */
-  calendarAvailability: flag(true),
-  /** Add agreed interviews to the calendar. */
+  /** Add interviews to the calendar. */
   calendarEvents: flag(true),
   /** The calendar to read and write; "primary" is the account's own. */
   calendarId: z.string().catch("primary"),
-  /** Working days, 1 = Monday … 7 = Sunday, as JSON. */
-  workDays: json(z.array(z.number().int().min(1).max(7))).catch([1, 2, 3, 4, 5]),
-  /** Working hours as "HH:MM". */
-  workStart: z.string().regex(/^\d{2}:\d{2}$/).catch("09:00"),
-  workEnd: z.string().regex(/^\d{2}:\d{2}$/).catch("17:00"),
-  /** The time zone for free slots and interviews; null means the browser's. */
+  /** The time zone for interviews; null means the browser's. */
   workTimeZone: z.string().nullable().catch(null),
-  /** Interview length and the gap kept around other meetings, in minutes. */
+  /** Interview length, in minutes. */
   slotMinutes: z.coerce.number().int().min(15).max(240).catch(45),
-  bufferMinutes: z.coerce.number().int().min(0).max(120).catch(15),
   // The usage ping (usage-ping.ts): this install's random ID, made by its
   // first ping, and the UTC day of the last one. They belong to the install,
   // not its data, so exports leave them out (INSTALL_SETTINGS).
@@ -248,7 +234,7 @@ export const settingsSchema = z.object({
   /** Other MCP apps' callback addresses, allowed like Claude's (#281). The install's too: an import must never add one. */
   connectorRedirects: stringList.catch([]),
   // The browser's time zone as it last told the server, for work done
-  // without a request, such as the inbox check (time-zone.ts). It belongs
+  // without a request, such as the calendar check (time-zone.ts). It belongs
   // to the install, not its data, so exports leave it out (INSTALL_SETTINGS).
   browserTimeZone: z.string().nullable().catch(null),
 });

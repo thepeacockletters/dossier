@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildMessage, decodeHeader, encodeAddress, encodeHeader, htmlToText, parseAddress, stripQuoted } from "./mime";
+import { buildMessage, encodeAddress, encodeHeader } from "./mime";
 
 const decodeBody = (message: string) => {
   const [, ...rest] = message.split("\r\n\r\n");
@@ -33,12 +33,6 @@ describe("buildMessage", () => {
     expect(message.trimEnd().endsWith("--b1--")).toBe(true);
   });
 
-  it("replies in a thread", () => {
-    const message = buildMessage({ from: "a@b.c", to: "d@e.f", subject: "Re: Hi", body: "Yes", inReplyTo: "<m2@e.f>", references: "<m1@e.f>" });
-    expect(message).toContain("In-Reply-To: <m2@e.f>");
-    expect(message).toContain("References: <m1@e.f> <m2@e.f>");
-  });
-
   it("never lets a header carry a line break", () => {
     expect(encodeHeader("Hi\r\nBcc: x@y.z")).toBe("Hi Bcc: x@y.z");
     expect(encodeAddress("x@y.z\r\nBcc: a@b.c")).toBe("x@y.z Bcc: a@b.c");
@@ -46,29 +40,3 @@ describe("buildMessage", () => {
   });
 });
 
-describe("reading mail", () => {
-  it("parses and decodes addresses and headers", () => {
-    expect(parseAddress('"Anna Keller" <A.Keller@Northwind.example>')).toEqual({ name: "Anna Keller", address: "a.keller@northwind.example" });
-    expect(parseAddress("jobs@acme.example")).toEqual({ name: "", address: "jobs@acme.example" });
-    expect(parseAddress('Anna "AK" Keller <ak@northwind.example>')).toEqual({ name: 'Anna "AK" Keller', address: "ak@northwind.example" });
-    expect(decodeHeader("=?UTF-8?B?QW5uYSBNw7xsbGVy?=")).toBe("Anna Müller");
-    expect(decodeHeader("=?ISO-8859-1?Q?J=F6rg_Schmidt?=")).toBe("Jörg Schmidt");
-  });
-
-  it("keeps the reply's own words", () => {
-    const text = "Hi Jane,\n\nCould we talk Tuesday?\n\nAnna\n\nOn Mon, 12 Oct 2026, Jane Doe wrote:\n> I'm applying for…\n> Best";
-    expect(stripQuoted(text)).toBe("Hi Jane,\n\nCould we talk Tuesday?\n\nAnna");
-    expect(stripQuoted("Danke!\n\nAm 12.10.2026 um 09:14 schrieb Jane Doe <jane@gmail.com>:\n> Hallo")).toBe("Danke!");
-  });
-
-  it("turns HTML into text", () => {
-    expect(htmlToText("<p>Hi&nbsp;Jane,</p><p>Could we talk?<br>Anna</p><style>p{}</style>")).toBe("Hi Jane,\nCould we talk?\nAnna");
-  });
-
-  it("reads long, broken mail quickly", () => {
-    const started = performance.now();
-    htmlToText(`${"<".repeat(100_000)}${" ".repeat(100_000)}x`);
-    parseAddress(`a${" ".repeat(100_000)}b`);
-    expect(performance.now() - started).toBeLessThan(500);
-  });
-});

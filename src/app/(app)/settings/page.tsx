@@ -83,18 +83,10 @@ export default async function SettingsPage({ searchParams }: PageProps<"/setting
             browserTimeZone={(await userTimeZone()) ?? null}
             redirectUri={redirectUri(await requestOrigin())}
             initial={{
-              gmailRead: settings.gmailRead,
-              gmailScope: settings.gmailScope,
-              gmailInterval: settings.gmailInterval,
-              calendarAvailability: settings.calendarAvailability,
               calendarEvents: settings.calendarEvents,
               calendarId: settings.calendarId,
-              workDays: settings.workDays,
-              workStart: settings.workStart,
-              workEnd: settings.workEnd,
               workTimeZone: settings.workTimeZone,
               slotMinutes: settings.slotMinutes,
-              bufferMinutes: settings.bufferMinutes,
             }}
           />
         </>

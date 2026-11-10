@@ -2,33 +2,19 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { checkInbox, disconnectGoogleAccount, saveGoogleSettings } from "@/lib/google/actions";
+import { disconnectGoogleAccount, saveGoogleSettings } from "@/lib/google/actions";
 
 import { GoogleSection, type GoogleClientView, type GoogleSettings } from "./google-section";
 
 vi.mock("@/lib/google/actions", () => ({
   saveGoogleClient: vi.fn(async () => ({ ok: true, data: { id: "", idState: "none", secretState: "none" } })),
-  checkInbox: vi.fn(async () => ({ ok: true, data: null })),
   disconnectGoogleAccount: vi.fn(async () => ({ ok: true, data: null })),
   saveGoogleSettings: vi.fn(async () => ({ ok: true, data: null })),
 }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 vi.mock("@/components/toast", () => ({ toast: vi.fn(), toastResult: (result: unknown) => result }));
 
-const settings: GoogleSettings = {
-  gmailRead: true,
-  gmailScope: "known",
-  gmailInterval: 10,
-  calendarAvailability: true,
-  calendarEvents: true,
-  calendarId: "primary",
-  workDays: [1, 2, 3, 4, 5],
-  workStart: "09:00",
-  workEnd: "17:00",
-  workTimeZone: null,
-  slotMinutes: 45,
-  bufferMinutes: 15,
-};
+const settings: GoogleSettings = { calendarEvents: true, calendarId: "primary", workTimeZone: null, slotMinutes: 45 };
 const redirect = "http://localhost:3000/api/google/callback";
 const client: GoogleClientView = { id: "", idState: "none", secretState: "none" };
 
@@ -52,13 +38,13 @@ describe("GoogleSection (E15-1)", () => {
     render(
       <GoogleSection
         client={client}
-        connection={{ status: "connected", email: "jane@gmail.com", canSend: true, canRead: true, canUseCalendar: true, lastSync: null, syncProblem: problem, signInProblem: problem }}
+        connection={{ status: "connected", email: "jane@gmail.com", canSend: true, canUseCalendar: true, signInProblem: problem }}
         initial={settings}
         browserTimeZone={null}
         redirectUri={redirect}
       />,
     );
-    expect(screen.getByRole("alert")).toHaveTextContent("Until then, Dossier doesn't check your mail or calendar.");
+    expect(screen.getByRole("alert")).toHaveTextContent("Until then, Dossier doesn't send mail or check your calendar.");
     expect(screen.getByRole("link", { name: "Connect again" })).toHaveAttribute("href", "/api/google/connect");
   });
 
@@ -67,7 +53,7 @@ describe("GoogleSection (E15-1)", () => {
     render(
       <GoogleSection
         client={client}
-        connection={{ status: "connected", email: "jane@gmail.com", canSend: true, canRead: true, canUseCalendar: false, lastSync: "today at 10:00", syncProblem: null, signInProblem: null }}
+        connection={{ status: "connected", email: "jane@gmail.com", canSend: true, canUseCalendar: false, signInProblem: null }}
         initial={settings}
         browserTimeZone="Europe/Berlin"
         redirectUri={redirect}
@@ -75,20 +61,13 @@ describe("GoogleSection (E15-1)", () => {
     );
     expect(screen.getByText("jane@gmail.com")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Allow" })).toHaveAttribute("href", "/api/google/connect?scopes=calendar");
-    expect(screen.getByText("Last checked today at 10:00")).toBeInTheDocument();
 
-    await user.click(screen.getByRole("radio", { name: "Every new email" }));
-    expect(saveGoogleSettings).toHaveBeenLastCalledWith({ gmailScope: "all" });
-    await user.click(screen.getByRole("button", { name: "Sat" }));
-    expect(saveGoogleSettings).toHaveBeenLastCalledWith({ workDays: [1, 2, 3, 4, 5, 6] });
     await user.selectOptions(screen.getByRole("combobox", { name: "Interview length" }), "60");
     expect(saveGoogleSettings).toHaveBeenLastCalledWith({ slotMinutes: 60 });
     await user.type(screen.getByRole("textbox", { name: "Time zone" }), "America/New_York");
     await user.tab();
     expect(saveGoogleSettings).toHaveBeenLastCalledWith({ workTimeZone: "America/New_York" });
 
-    await user.click(screen.getByRole("button", { name: "Check now" }));
-    expect(checkInbox).toHaveBeenCalled();
     await user.click(screen.getByRole("button", { name: "Disconnect" }));
     await user.click(screen.getByRole("button", { name: "Disconnect" }));
     expect(disconnectGoogleAccount).toHaveBeenCalled();

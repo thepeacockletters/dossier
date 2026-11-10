@@ -11,8 +11,8 @@ vi.mock("../actions", () => ({ rememberDashboardPeriod: vi.fn() }));
 const figures = usageFigures([
   { task: "tailor-resume", requests: 4, inputRequests: 4, input: 24_000, outputRequests: 4, output: 6_500 },
   { task: "score-posting-jev", requests: 12, inputRequests: 12, input: 30_000, outputRequests: 0, output: 0 },
-  { task: "classify-reply", requests: 2, inputRequests: 0, input: 0, outputRequests: 0, output: 0 },
-  { task: "draft-reply", requests: 3, inputRequests: 2, input: 1_800, outputRequests: 2, output: 400 },
+  { task: "regenerate-unit", requests: 2, inputRequests: 0, input: 0, outputRequests: 0, output: 0 },
+  { task: "write-email", requests: 3, inputRequests: 2, input: 1_800, outputRequests: 2, output: 400 },
 ]);
 
 /** A row's cells after its task: requests, input, output, total. */
@@ -29,7 +29,7 @@ describe("UsageScreen (#290)", () => {
     expect(screen.getByRole("radio", { name: "Last 30 days" })).toBeChecked();
     const tasks = screen.getAllByRole("rowheader").map((header) => header.querySelector("span")?.textContent ?? header.textContent);
     expect(tasks.slice(0, 2)).toEqual(["Writing resumes", "Scoring postings with Jev"]);
-    expect(tasks).toHaveLength(14);
+    expect(tasks).toHaveLength(12);
     expect(tasks.at(-1)).toBe("All tasks");
     expect(cells("Writing resumes")).toEqual(["4", "24,000", "6,500", "30,500"]);
     expect(cells("Connection checks")).toEqual(["0", "0", "0", "0"]);
@@ -38,9 +38,9 @@ describe("UsageScreen (#290)", () => {
 
   it("says Not reported for counts a server didn't send, and how many requests lacked one", () => {
     render(<UsageScreen figures={figures} period="30d" countingSince={new Date("2026-11-01T09:00:00Z")} timeZone="UTC" />);
-    expect(cells("Reading replies")).toEqual(["2", "Not reported", "Not reported", "Not reported"]);
+    expect(cells("Rewriting parts")).toEqual(["2", "Not reported", "Not reported", "Not reported"]);
     expect(cells("Scoring postings with Jev")).toEqual(["12", "30,000", "Not reported", "30,000"]);
-    expect(cells("Drafting answers")).toEqual(["3", "1,8001 request not reported", "4001 request not reported", "2,200"]);
+    expect(cells("Writing emails")).toEqual(["3", "1,8001 request not reported", "4001 request not reported", "2,200"]);
     expect(screen.getByText(/Counting since Sun 1 Nov\. “Not reported” means the server didn't say/)).toBeInTheDocument();
   });
 

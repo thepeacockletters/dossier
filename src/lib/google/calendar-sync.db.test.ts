@@ -18,11 +18,17 @@ vi.mock("@/lib/time-zone", () => ({ userTimeZone: async () => "Europe/Berlin", l
 
 import { encryptSecret, GOOGLE_TOKEN } from "@/lib/secrets";
 
-import { pullInterviewEvents, scheduleInterview, syncInterviewToCalendar } from "./availability";
+import { pullInterviewEvents, syncInterviewToCalendar } from "./availability";
 import { loadCalendar } from "./calendar-data";
 
 const prisma = () => db.client!;
-const scopes = "openid email https://www.googleapis.com/auth/calendar.freebusy https://www.googleapis.com/auth/calendar.events";
+const scopes = "openid email https://www.googleapis.com/auth/calendar.events";
+
+/** Sets the application's next interview, as the status control does, and keeps the calendar in step. */
+async function scheduleInterview(applicationId: string, start: Date) {
+  await prisma().application.update({ where: { id: applicationId }, data: { nextInterviewAt: start } });
+  return syncInterviewToCalendar(applicationId);
+}
 
 type FakeEvent = { id: string; status: string; summary: string; start: { dateTime: string }; end: { dateTime: string }; extendedProperties?: unknown };
 let events: Map<string, FakeEvent>;

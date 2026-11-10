@@ -36,8 +36,8 @@ import { appVersion } from "@/lib/version";
 // documents, chat and notes, the postings kept from Find jobs (E14-9) and
 // the job agent's candidates (E16), so its dedupe survives a restore.
 // IDs are kept, so an import restores every link. Jobs, sign-in throttling,
-// built-in themes, the Google account and the mail fetched from Gmail stay
-// behind: they belong to the server or the mailbox, not the user's data.
+// built-in themes and the Google account stay behind: they belong to the
+// server, not the user's data.
 
 export const EXPORT_FORMAT = "dossier-export";
 /** Bump when the file's shape changes; imports refuse versions they don't know. 2 added Find jobs' postings and keys (E14-9), 3 projects (PRO-13) and the job agent (E16), 4 facts (PRO-14, APP-15), 5 publications (#218), the profile photo's theme and application options (#224) and Startups (#222), 6 the line about a role's company (#257), 7 skill groups (#280), 8 certifications (#293) and volunteering (#294), 9 resume section order (#297), custom sections (#298) and what sent applications were sent with (#299), and the board's order (public issue 60), 10 the tailored resume's score (#370), 11 the job agent's recurring searches and which found each candidate (public PR 61). */

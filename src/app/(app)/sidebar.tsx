@@ -38,7 +38,7 @@ export function Sidebar({
   collapsed: boolean;
   /** The scheme the switch chose last, if any. */
   colorScheme?: ColorScheme;
-  /** Badges by nav item, e.g. replies waiting in the inbox. */
+  /** Badges by nav item, e.g. the job agent's finds. */
   counts?: Record<string, number>;
 }) {
   return (

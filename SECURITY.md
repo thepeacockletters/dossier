@@ -19,15 +19,14 @@ Please report it privately through GitHub: on the repository's **Security** tab,
 
 ## AI and untrusted text
 
-A job posting, or a reply from Gmail, is text someone else wrote, and it goes into prompts. It could try to steer the model ("ignore your instructions and…"). What limits the damage:
+A job posting is text someone else wrote, and it goes into prompts. It could try to steer the model ("ignore your instructions and…"). What limits the damage:
 
 - The model has no tools: it can't read your other data, browse or change anything. It only returns text.
 - What it returns is shown as plain text, never as HTML, and checked against a schema before it's saved.
 - The fact guard flags claims in a draft that your profile doesn't back up.
-- You read every document before you send it, and a drafted answer to a mail only goes out when you confirm it.
-- Reading a mail only suggests a status for its application, which you take up or not.
+- You read every document before you send it.
 
-So the worst a hostile posting or mail can do is get odd wording into its own draft, or suggest the wrong status.
+So the worst a hostile posting can do is get odd wording into its own draft.
 
 ## Running it safely
 

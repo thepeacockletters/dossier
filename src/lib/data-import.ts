@@ -110,8 +110,6 @@ export async function importExport(db: PrismaClient, data: DossierExport): Promi
       await tx.agentSearch.deleteMany();
       // Scores of postings (#208) belong to the profile being replaced; they're left out of exports, since they can be made again.
       await tx.postingScore.deleteMany();
-      // Mail from Gmail belongs to the applications being replaced; the next check fetches what's still relevant.
-      await tx.emailMessage.deleteMany();
       await tx.application.deleteMany();
       await tx.experience.deleteMany();
       await tx.project.deleteMany();

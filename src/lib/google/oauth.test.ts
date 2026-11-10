@@ -33,10 +33,9 @@ describe("the consent page", () => {
   });
 
   it("tells which features were granted", () => {
-    const granted = `openid ${SCOPES.send[0]} ${SCOPES.calendar.join(" ")}`;
-    expect(hasScopes(granted, "send")).toBe(true);
-    expect(hasScopes(granted, "calendar")).toBe(true);
-    expect(hasScopes(granted, "read")).toBe(false);
+    expect(hasScopes(`openid ${SCOPES.send[0]} ${SCOPES.calendar.join(" ")}`, "send")).toBe(true);
+    expect(hasScopes(`openid ${SCOPES.send[0]} ${SCOPES.calendar.join(" ")}`, "calendar")).toBe(true);
+    expect(hasScopes(`openid ${SCOPES.send[0]}`, "calendar")).toBe(false);
   });
 
   it("reads the address from the ID token", () => {

@@ -171,7 +171,7 @@ export default async function WelcomePage({ searchParams }: PageProps<"/welcome"
         step="google"
         title="Gmail and Calendar"
         complete={connection.status === "connected"}
-        lead="Optional, and the longest step. With your Google account connected, Dossier sends applications from your Gmail, links employers' replies to them, drafts your answers and offers times you're free. It takes a few pages in Google Cloud, done once."
+        lead="Optional, and the longest step. With your Google account connected, Dossier sends applications from your Gmail and keeps your interviews in your calendar. It takes a few pages in Google Cloud, done once."
       >
         <GoogleStep
           connection={connection}

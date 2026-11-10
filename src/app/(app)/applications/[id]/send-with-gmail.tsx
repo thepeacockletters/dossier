@@ -11,7 +11,7 @@ import { emailAddresses } from "@/lib/application-email";
 import { sendWithGmail } from "@/lib/google/actions";
 
 /** Whether Gmail can send, for the Email tab: the account it sends from, or why not. */
-export type GmailSender = { from: string } | { from: null; reason: "not-configured" | "not-connected" | "no-permission" };
+export type GmailSender = { from: string } | { from: null; reason: "not-connected" | "no-permission" };
 
 /**
  * "Send with Gmail" (E15-2): sends the email from the connected account with
@@ -38,7 +38,6 @@ export function SendWithGmail({
   const [sending, startSending] = useTransition();
 
   if (sender.from === null) {
-    if (sender.reason === "not-configured") return null;
     return (
       <a href={sender.reason === "no-permission" ? "/api/google/connect?scopes=send" : "/settings?section=google"} className={buttonClassName("secondary", "md")}>
         {sender.reason === "no-permission" ? "Allow sending with Gmail" : "Connect Gmail to send"}
@@ -85,8 +84,8 @@ export function SendWithGmail({
                 <dd className="text-ink [overflow-wrap:anywhere]">{attachments.length > 0 ? attachments.join(", ") : "Nothing"}</dd>
               </dl>
               <p>
-                {sentBefore ? "It's already gone out once; this sends it again. " : "It moves to Sent, and "}
-                I&apos;ll watch the thread for replies. This can&apos;t be unsent.
+                {sentBefore ? "It's already gone out once; this sends it again. " : "It moves to Sent. "}
+                This can&apos;t be unsent.
               </p>
             </div>
           </AlertDialog.Description>

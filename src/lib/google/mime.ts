@@ -1,8 +1,7 @@
 import { randomBytes } from "node:crypto";
 
-// Building and reading email messages (RFC 5322, MIME) for Gmail (E15-2,
-// E15-3). Only what Dossier sends and reads: a plain text body with PDF
-// attachments, and the text of replies.
+// Building email messages (RFC 5322, MIME) for Gmail (E15-2). Only what
+// Dossier sends: a plain text body with PDF attachments.
 
 export type Attachment = { fileName: string; contentType: string; data: Uint8Array };
 
@@ -12,10 +11,6 @@ export type OutgoingMail = {
   subject: string;
   body: string;
   attachments?: Attachment[];
-  /** The Message-ID being answered, to reply in its thread. */
-  inReplyTo?: string;
-  /** The thread's earlier Message-IDs. */
-  references?: string;
 };
 
 /** A header value in RFC 2047 encoded words when it isn't plain ASCII. */
@@ -61,7 +56,6 @@ export function buildMessage(mail: OutgoingMail, { boundary = `dossier-${randomB
     `Subject: ${encodeHeader(mail.subject)}`,
     `Date: ${date.toUTCString().replace("GMT", "+0000")}`,
     "MIME-Version: 1.0",
-    ...(mail.inReplyTo ? [`In-Reply-To: ${mail.inReplyTo}`, `References: ${[mail.references, mail.inReplyTo].filter(Boolean).join(" ")}`] : []),
   ];
   const text = ["Content-Type: text/plain; charset=UTF-8", "Content-Transfer-Encoding: base64", "", wrapped(mail.body.replace(/\r?\n/g, "\r\n"))].join("\r\n");
   const attachments = mail.attachments ?? [];
@@ -91,72 +85,3 @@ export function buildMessage(mail: OutgoingMail, { boundary = `dossier-${randomB
 
 /** base64url, as Gmail's API wants message bodies. */
 export const toBase64Url = (text: string) => Buffer.from(text, "utf8").toString("base64url");
-
-/** "Jane Doe <jane@example.com>" → its parts. */
-export function parseAddress(value: string): { name: string; address: string } {
-  const parts = addressParts(value);
-  if (parts) return { name: decodeHeader(parts.name), address: parts.address.toLowerCase() };
-  return { name: "", address: value.trim().toLowerCase() };
-}
-
-/** RFC 2047 encoded words back to text. */
-export function decodeHeader(value: string): string {
-  return value.replace(/=\?([^?]+)\?([bq])\?([^?]*)\?=/gi, (_, charset: string, encoding: string, text: string) => {
-    try {
-      const bytes =
-        encoding.toLowerCase() === "b"
-          ? Buffer.from(text, "base64")
-          : Buffer.from(text.replace(/_/g, " ").replace(/=([0-9a-f]{2})/gi, (_m, hex: string) => String.fromCharCode(Number.parseInt(hex, 16))), "latin1");
-      return new TextDecoder(charset).decode(bytes);
-    } catch {
-      return text;
-    }
-  });
-}
-
-/** The domain of an address, lowercased: "jobs.example.com". */
-export function domainOf(address: string): string {
-  return address.split("@")[1]?.trim().toLowerCase() ?? "";
-}
-
-/** Domains where anyone can have an address, so they don't tell a company apart. */
-export const FREEMAIL = new Set([
-  "gmail.com", "googlemail.com", "outlook.com", "hotmail.com", "live.com", "yahoo.com", "icloud.com", "me.com",
-  "gmx.de", "gmx.net", "web.de", "proton.me", "protonmail.com", "aol.com", "mail.com", "t-online.de",
-]);
-
-/**
- * The reply's own words: quoted lines and everything after "On … wrote:"
- * (or a forwarded or original-message marker) go.
- */
-export function stripQuoted(text: string): string {
-  const lines = text.replace(/\r\n/g, "\n").split("\n");
-  const kept: string[] = [];
-  for (const line of lines) {
-    if (/^\s*>/.test(line)) continue;
-    if (/^\s*(On .+wrote:|Am .+schrieb.+:|Le .+a écrit\s*:|-{2,}\s*Original Message\s*-{2,}|-{5,}\s*Forwarded message)/i.test(line)) break;
-    if (/^\s*From:\s.+/i.test(line) && kept.some((entry) => entry.trim())) break;
-    kept.push(line);
-  }
-  return kept.join("\n").replace(/\n{3,}/g, "\n\n").trim();
-}
-
-/** HTML mail as plain text, for when there's no text part. */
-export function htmlToText(html: string): string {
-  return html
-    .replace(/<(script|style)[\s\S]*?<\/\1>/gi, "")
-    .replace(/<br\s*\/?>/gi, "\n")
-    .replace(/<\/(p|div|li|tr|h\d)>/gi, "\n")
-    .replace(/<[^<>]+>/g, "")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .split("\n")
-    .map((line) => line.trimEnd())
-    .join("\n")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim();
-}

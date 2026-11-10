@@ -49,7 +49,7 @@ describe("loadUsage", () => {
         { task: "tailor-resume", provider: "OPENAI", model: "gpt", inputTokens: 5_000, outputTokens: 1_500, createdAt: daysAgo(2) },
         { task: "tailor-resume", provider: "OPENAI", model: "gpt", inputTokens: 4_000, outputTokens: 1_000, createdAt: daysAgo(10) },
         { task: "tailor-resume", provider: "LOCAL", model: "llama", inputTokens: null, outputTokens: null, createdAt: daysAgo(20) },
-        { task: "classify-reply", provider: "OPENAI", model: "gpt", inputTokens: 700, outputTokens: 20, createdAt: daysAgo(60) },
+        { task: "regenerate-unit", provider: "OPENAI", model: "gpt", inputTokens: 700, outputTokens: 20, createdAt: daysAgo(60) },
       ],
     });
   });
@@ -63,7 +63,7 @@ describe("loadUsage", () => {
       output: { tokens: 2_500, unreported: 1 },
       total: 11_500,
     });
-    expect(figures.rows.find((row) => row.task === "classify-reply")).toMatchObject({ requests: 0 });
+    expect(figures.rows.find((row) => row.task === "regenerate-unit")).toMatchObject({ requests: 0 });
     expect(figures.total).toMatchObject({ requests: 3, total: 11_500 });
     // Whatever the period: counting started with the first request ever.
     expect(countingSince).toEqual(daysAgo(60));

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useState } from "react";
 
 import { useTrackSave } from "@/components/save-tracker";
 import { toast, toastResult } from "@/components/toast";
@@ -9,27 +9,18 @@ import { Button, buttonClassName } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Input } from "@/components/ui/input";
-import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Select } from "@/components/ui/select";
 import { Toggle } from "@/components/ui/toggle";
-import { checkInbox, disconnectGoogleAccount, saveGoogleClient, saveGoogleSettings } from "@/lib/google/actions";
+import { disconnectGoogleAccount, saveGoogleClient, saveGoogleSettings } from "@/lib/google/actions";
 import { cn } from "@/lib/cn";
 
 import { SettingsSectionIntro } from "./settings-screen";
 
 export type GoogleSettings = {
-  gmailRead: boolean;
-  gmailScope: "known" | "all";
-  gmailInterval: number;
-  calendarAvailability: boolean;
   calendarEvents: boolean;
   calendarId: string;
-  workDays: number[];
-  workStart: string;
-  workEnd: string;
   workTimeZone: string | null;
   slotMinutes: number;
-  bufferMinutes: number;
 };
 
 /** Where each part of the OAuth client comes from; the secret itself never reaches the browser. */
@@ -46,17 +37,11 @@ export type GoogleConnectionView =
       status: "connected";
       email: string;
       canSend: boolean;
-      canRead: boolean;
       canUseCalendar: boolean;
-      lastSync: string | null;
-      syncProblem: string | null;
       signInProblem: string | null;
     };
 
-const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-const INTERVALS = [5, 10, 15, 30, 60];
 const LENGTHS = [15, 30, 45, 60, 90];
-const BUFFERS = [0, 10, 15, 30];
 
 /** What came back from Google's consent page, as a message. */
 export const CALLBACK_MESSAGES: Record<string, string> = {
@@ -69,9 +54,8 @@ export const CALLBACK_MESSAGES: Record<string, string> = {
 };
 
 /**
- * Settings → Google (E15-1): connect Gmail and Calendar, choose what Dossier
- * reads, and set the working hours that interview times are offered in.
- * Every field saves on its own. Nothing is ever sent without asking.
+ * Settings → Google (E15-1): connect Gmail and Calendar, and choose how
+ * interviews go into the calendar. Every field saves on its own. Nothing is ever sent without asking.
  */
 export function GoogleSection({
   connection,
@@ -93,7 +77,6 @@ export function GoogleSection({
   const [timeZone, setTimeZone] = useState(initial.workTimeZone ?? "");
   const [calendarId, setCalendarId] = useState(initial.calendarId);
   const [confirming, setConfirming] = useState(false);
-  const [checking, startChecking] = useTransition();
 
   const change = (next: Partial<GoogleSettings>) => {
     const previous = settings;
@@ -103,26 +86,16 @@ export function GoogleSection({
     });
   };
 
-  const toggleDay = (day: number) =>
-    change({ workDays: settings.workDays.includes(day) ? settings.workDays.filter((entry) => entry !== day) : [...settings.workDays, day].sort((a, b) => a - b) });
-
   const disconnect = async () => {
     if (toastResult(await disconnectGoogleAccount({})).ok) router.refresh();
   };
-
-  const checkNow = () =>
-    startChecking(async () => {
-      toastResult(await checkInbox({}));
-      router.refresh();
-    });
 
   if (connection.status === "not-configured") return <SetupSteps redirectUri={redirectUri} client={client} />;
 
   return (
     <>
       <SettingsSectionIntro title="Google">
-        Send applications from your Gmail, see employers&apos; replies next to each application, and offer interview times from your
-        calendar. Dossier always asks before it sends anything.
+        Send applications from your Gmail and keep interviews in your calendar. Dossier always asks before it sends anything.
       </SettingsSectionIntro>
 
       <Card className="flex flex-col gap-4">
@@ -140,7 +113,7 @@ export function GoogleSection({
             {connection.signInProblem && (
               <div className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-line px-4 py-3">
                 <p role="alert" className="text-control text-error">
-                  {connection.signInProblem} Until then, Dossier doesn&apos;t check your mail or calendar.
+                  {connection.signInProblem} Until then, Dossier doesn&apos;t send mail or check your calendar.
                 </p>
                 <a href="/api/google/connect" className={buttonClassName("secondary", "sm")}>
                   Connect again
@@ -149,8 +122,7 @@ export function GoogleSection({
             )}
             <ul className="flex flex-col gap-1.5 text-meta text-muted">
               <Permission granted={connection.canSend} group="send" label="Send email from your address" />
-              <Permission granted={connection.canRead} group="read" label="Read your mail, to find replies to your applications" />
-              <Permission granted={connection.canUseCalendar} group="calendar" label="See when you're free and add interviews to your calendar" />
+              <Permission granted={connection.canUseCalendar} group="calendar" label="Add interviews to your calendar" />
             </ul>
           </>
         ) : (
@@ -168,116 +140,20 @@ export function GoogleSection({
 
       {connection.status === "connected" && (
         <>
-          <Card padding="none" className="flex flex-col px-7 pt-1.5 pb-5">
-            <Toggle
-              className="py-4"
-              label="Read replies"
-              description="Check Gmail for employers' replies, link them to applications and have the AI read them."
-              checked={settings.gmailRead}
-              disabled={!connection.canRead}
-              onCheckedChange={(gmailRead) => change({ gmailRead })}
-            />
-            {settings.gmailRead && connection.canRead && (
-              <div className="flex flex-col gap-4 border-t border-line pt-4">
-                <div className="flex flex-col gap-[7px]">
-                  <span id="gmail-scope" className="text-label text-muted">
-                    Which mail
-                  </span>
-                  <SegmentedControl<"known" | "all">
-                    aria-labelledby="gmail-scope"
-                    size="sm"
-                    options={[
-                      { value: "known", label: "Threads I started and company domains" },
-                      { value: "all", label: "Every new email" },
-                    ]}
-                    value={settings.gmailScope}
-                    onValueChange={(gmailScope) => change({ gmailScope })}
-                  />
-                  <p className="text-meta text-muted">
-                    {settings.gmailScope === "known"
-                      ? "Only mail that matches an application is kept and sent to the AI."
-                      : "Mail that doesn't match an application waits under Needs a look. With a hosted AI, it's sent to the provider to be read."}
-                  </p>
-                </div>
-                <div className="flex flex-wrap items-end gap-4">
-                  <Select
-                    label="Check every"
-                    className="w-40"
-                    value={settings.gmailInterval}
-                    onChange={(event) => change({ gmailInterval: Number(event.target.value) })}
-                  >
-                    {INTERVALS.map((minutes) => (
-                      <option key={minutes} value={minutes}>
-                        {minutes} minutes
-                      </option>
-                    ))}
-                  </Select>
-                  <Button variant="secondary" onClick={checkNow} disabled={checking}>
-                    {checking ? "Checking…" : "Check now"}
-                  </Button>
-                  <p role="status" className={cn("flex items-center gap-2 pb-2 text-control", connection.syncProblem ? "text-error" : "text-muted")}>
-                    {connection.syncProblem ?? (connection.lastSync ? `Last checked ${connection.lastSync}` : "Not checked yet")}
-                  </p>
-                </div>
-              </div>
-            )}
-          </Card>
-
           <Card padding="none" className="flex flex-col px-7 pt-1.5 pb-6">
             <Toggle
               className="py-4"
-              label="Offer times from my calendar"
-              description="When an employer asks to meet, the drafted answer offers times you're free."
-              checked={settings.calendarAvailability}
-              disabled={!connection.canUseCalendar}
-              onCheckedChange={(calendarAvailability) => change({ calendarAvailability })}
-            />
-            <Toggle
-              className="border-t border-line py-4"
               label="Add interviews to my calendar"
-              description="Once a time is agreed, add it with a link back to the application, and keep it in step: a time changed here or in Google changes on both sides."
+              description="Add an application's interview with a link back to it, and keep it in step: a time changed here or in Google changes on both sides."
               checked={settings.calendarEvents}
               disabled={!connection.canUseCalendar}
               onCheckedChange={(calendarEvents) => change({ calendarEvents })}
             />
             <div className="grid gap-x-[18px] gap-y-5 border-t border-line pt-5 sm:grid-cols-2">
-              <div className="flex flex-col gap-[7px] sm:col-span-2">
-                <span id="work-days" className="text-label text-muted">
-                  Working days
-                </span>
-                <div role="group" aria-labelledby="work-days" className="flex flex-wrap gap-1.5">
-                  {DAYS.map((label, index) => {
-                    const on = settings.workDays.includes(index + 1);
-                    return (
-                      <button
-                        key={label}
-                        type="button"
-                        aria-pressed={on}
-                        onClick={() => toggleDay(index + 1)}
-                        className={cn(
-                          "min-w-12 rounded-control border px-2.5 py-1.5 text-control",
-                          on ? "border-primary bg-selected font-medium text-ink" : "border-line-field bg-input text-muted hover:border-line-strong",
-                        )}
-                      >
-                        {label}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-              <Input label="From" type="time" value={settings.workStart} onChange={(event) => event.target.value && change({ workStart: event.target.value })} />
-              <Input label="Until" type="time" value={settings.workEnd} onChange={(event) => event.target.value && change({ workEnd: event.target.value })} />
               <Select label="Interview length" value={settings.slotMinutes} onChange={(event) => change({ slotMinutes: Number(event.target.value) })}>
                 {LENGTHS.map((minutes) => (
                   <option key={minutes} value={minutes}>
                     {minutes} minutes
-                  </option>
-                ))}
-              </Select>
-              <Select label="Keep free around meetings" value={settings.bufferMinutes} onChange={(event) => change({ bufferMinutes: Number(event.target.value) })}>
-                {BUFFERS.map((minutes) => (
-                  <option key={minutes} value={minutes}>
-                    {minutes === 0 ? "No gap" : `${minutes} minutes`}
                   </option>
                 ))}
               </Select>
@@ -309,7 +185,7 @@ export function GoogleSection({
         open={confirming}
         onOpenChange={setConfirming}
         title="Disconnect Google?"
-        description="Dossier's access is revoked at Google. Mail already in Dossier stays; nothing new comes in until you connect again."
+        description="Dossier's access is revoked at Google. You can connect again at any time."
         confirmLabel="Disconnect"
         onConfirm={() => void disconnect()}
       />
@@ -346,8 +222,8 @@ function SetupSteps({ redirectUri, client }: { redirectUri: string; client: Goog
   return (
     <>
       <SettingsSectionIntro title="Google">
-        Connect Gmail and Google Calendar to send applications, read replies and offer interview times. First, give this server a
-        Google OAuth client.
+        Connect Gmail and Google Calendar to send applications and keep interviews in your calendar. First, give this server a Google
+        OAuth client.
       </SettingsSectionIntro>
       <Card className="flex flex-col gap-4 text-sm">
         <ol className="flex list-decimal flex-col gap-2.5 pl-5">

@@ -37,12 +37,10 @@ describe("SendWithGmail (E15-2)", () => {
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
   });
 
-  it("points to connecting, or to the missing permission, and hides without a Google client", () => {
-    const { rerender, container } = render(<SendWithGmail {...props} sender={{ from: null, reason: "not-connected" }} />);
+  it("points to connecting, or to the missing permission", () => {
+    const { rerender } = render(<SendWithGmail {...props} sender={{ from: null, reason: "not-connected" }} />);
     expect(screen.getByRole("link", { name: "Connect Gmail to send" })).toHaveAttribute("href", "/settings?section=google");
     rerender(<SendWithGmail {...props} sender={{ from: null, reason: "no-permission" }} />);
     expect(screen.getByRole("link", { name: "Allow sending with Gmail" })).toHaveAttribute("href", "/api/google/connect?scopes=send");
-    rerender(<SendWithGmail {...props} sender={{ from: null, reason: "not-configured" }} />);
-    expect(container).toBeEmptyDOMElement();
   });
 });

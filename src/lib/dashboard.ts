@@ -50,9 +50,7 @@ export type AttentionItem = {
   role: string;
   status: ApplicationStatus;
   reason: string;
-  action: "Review" | "Finish" | "Open" | "Answer";
-  /** Where the item links to, when not the application's first tab. */
-  tab?: "conversation";
+  action: "Review" | "Finish" | "Open";
   /** An interview today or tomorrow (E9-9). */
   soon?: boolean;
 };
@@ -111,8 +109,6 @@ export type DashboardOptions = {
   period?: DashboardPeriod;
   /** Days without news before "Worth a look" suggests a follow-up. */
   quietDays?: number;
-  /** Per application, replies from Gmail waiting for an answer (E15-3). */
-  replies?: ReadonlyMap<string, { count: number; summary: string }>;
   /** The user's time zone, for interview dates; the server's when not given. */
   timeZone?: string;
 };
@@ -136,7 +132,7 @@ function outcome({ status, archived }: DashboardApplication): FunnelOutcome {
 export function dashboardFigures(
   all: readonly DashboardApplication[],
   now = new Date(),
-  { period = "all", quietDays = DEFAULT_QUIET_DAYS, timeZone, replies }: DashboardOptions = {},
+  { period = "all", quietDays = DEFAULT_QUIET_DAYS, timeZone }: DashboardOptions = {},
 ): DashboardFigures {
   const days = DASHBOARD_PERIODS.find((entry) => entry.value === period)?.days ?? null;
   const since = days === null ? null : now.getTime() - days * DAY_MS;
@@ -166,7 +162,7 @@ export function dashboardFigures(
     heardBack,
     heardBackPercent: sent > 0 ? Math.round((heardBack / sent) * 100) : null,
     reachedInterview: reached(FunnelStage.INTERVIEW),
-    attention: worthALook(all.filter((application) => !application.archived), now, { quietDays, timeZone, replies }),
+    attention: worthALook(all.filter((application) => !application.archived), now, { quietDays, timeZone }),
     weeks: weeklyActivity(applications, now, since),
   };
 }
@@ -212,7 +208,7 @@ function weeklyActivity(applications: readonly DashboardApplication[], now: Date
 function worthALook(
   applications: readonly DashboardApplication[],
   now: Date,
-  { quietDays, timeZone, replies }: { quietDays: number; timeZone?: string; replies?: DashboardOptions["replies"] },
+  { quietDays, timeZone }: { quietDays: number; timeZone?: string },
 ): AttentionItem[] {
   const item = (application: DashboardApplication, reason: string, action: AttentionItem["action"]): AttentionItem => ({
     id: application.id,
@@ -282,15 +278,7 @@ function worthALook(
     .sort(latestFirst)
     .map((application) => item(application, "You're interviewing. Add the next interview's date and it shows up here.", "Open"));
 
-  // Replies waiting for an answer come first, in place of the application's other item (E15-3).
-  const answering = applications.flatMap((application) => {
-    const waiting = replies?.get(application.id);
-    if (!waiting) return [];
-    const reason = waiting.count === 1 ? `A reply is waiting: ${waiting.summary}` : `${waiting.count} replies are waiting. ${waiting.summary}`;
-    return [{ ...item(application, reason, "Answer"), tab: "conversation" as const }];
-  });
-  const answered = new Set(answering.map((entry) => entry.id));
   const soon = upcoming.filter((entry) => entry.soon);
   const later = upcoming.filter((entry) => !entry.soon);
-  return [...answering, ...[...soon, ...offers, ...drafts, ...quiet, ...later, ...past, ...undated].filter((entry) => !answered.has(entry.id))];
+  return [...soon, ...offers, ...drafts, ...quiet, ...later, ...past, ...undated];
 }

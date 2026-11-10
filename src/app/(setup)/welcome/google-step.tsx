@@ -83,7 +83,7 @@ export function GoogleStep({
             <dd className="text-pretty text-muted">Nothing. Google Cloud may ask for billing details for other services; Gmail and Calendar don&apos;t need it.</dd>
             <dt className="font-medium">Your data</dt>
             <dd className="text-pretty text-muted">
-              Your mail and calendar stay with Google. Dossier reads the replies to your applications, and the AI you chose reads them to draft your answers. Nothing
+              Your mail and calendar stay with Google. Dossier only sends the emails you send from it and adds your interviews to your calendar. Nothing
               is sent without you pressing Send.
             </dd>
           </dl>

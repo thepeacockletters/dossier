@@ -1,4 +1,4 @@
-import { zonedTime } from "@/lib/google/slots";
+import { zonedTime } from "@/lib/zoned-time";
 
 // The dashboard calendar's dates (E15-6): which days a month shows, and what
 // the agenda lists from the day picked, in the user's time zone. Days are

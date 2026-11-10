@@ -24,8 +24,7 @@ export const CALLBACK_PATH = "/api/google/callback";
 export const SCOPES = {
   identity: ["openid", "email"],
   send: ["https://www.googleapis.com/auth/gmail.send"],
-  read: ["https://www.googleapis.com/auth/gmail.readonly"],
-  calendar: ["https://www.googleapis.com/auth/calendar.freebusy", "https://www.googleapis.com/auth/calendar.events"],
+  calendar: ["https://www.googleapis.com/auth/calendar.events"],
 } as const;
 
 export type ScopeGroup = keyof typeof SCOPES;

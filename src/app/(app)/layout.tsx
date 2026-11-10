@@ -6,7 +6,6 @@ import { countAgentQueue } from "@/lib/agent/view";
 import { checkAnnouncementsIfDue } from "@/lib/announcements/check";
 import { currentAnnouncement } from "@/lib/announcements/visible";
 import { verifySession } from "@/lib/auth/session";
-import { inboxCount } from "@/lib/google/inbox-data";
 import { loadProfileName } from "@/lib/profile-data";
 import { prisma } from "@/lib/prisma";
 import { loadSettings } from "@/lib/settings-data";
@@ -32,7 +31,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   // The day's usage ping and update check, if they haven't run yet: after the page, so they never slow one down.
   after(notePageLoad);
   after(checkForUpdatesDaily);
-  // The browser's zone, for the inbox check, which runs without a request.
+  // The browser's zone, for work that runs without a request (the job agent, the calendar).
   const zone = await userTimeZone();
   after(() => rememberBrowserTimeZone(zone));
 
@@ -43,8 +42,8 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   after(() => checkAnnouncementsIfDue(settings));
   const userName = name.trim() || "New user";
   const announcement = currentAnnouncement(settings);
-  // Replies waiting for an answer or a link, on the Inbox item; the job agent's finds and drafts on its own (E16-6).
-  const [waiting, agent] = await Promise.all([inboxCount().catch(() => 0), countAgentQueue().catch(() => 0)]);
+  // The job agent's finds and drafts, on its nav item (E16-6).
+  const agent = await countAgentQueue().catch(() => 0);
 
   return (
     <div className="flex min-h-screen">
@@ -59,7 +58,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         update={updateNotice(settings)}
         currentVersion={appVersion}
         collapsed={parseSidebarCollapsed(jar.get(SIDEBAR_COOKIE)?.value)}
-        counts={{ ...(waiting > 0 ? { "/inbox": waiting } : {}), ...(agent > 0 ? { "/agent": agent } : {}) }}
+        counts={agent > 0 ? { "/agent": agent } : {}}
         colorScheme={parseColorScheme(jar.get(COLOR_SCHEME_COOKIE)?.value)}
       />
       {/* The screen sits in a white panel inset from the shell. Each screen

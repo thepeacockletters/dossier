@@ -5,45 +5,15 @@ import { loadSettings } from "@/lib/settings-data";
 import { lastKnownTimeZone } from "@/lib/time-zone";
 
 import { googleConnection } from "./account";
-import { busyTimes, createEvent, deleteEvent, getEvent, moveEvent } from "./calendar";
-import { GoogleError } from "./errors";
-import { freeSlots, type Interval, type WorkingHours } from "./slots";
+import { createEvent, deleteEvent, getEvent, moveEvent } from "./calendar";
 
-// The calendar side (E15-5): free times to offer an employer, and agreed
-// interviews added to the calendar and the dashboard.
+// The calendar side (E15-5): interviews kept in step between the
+// application's next interview, the dashboard and Google Calendar.
 
-/** The working hours in Settings → Google, in the saved time zone or else the browser's. */
-export async function workingHours(): Promise<WorkingHours> {
+/** The time zone for interviews (Settings → Google, or else the browser's) and their length. */
+export async function workingHours(): Promise<{ timeZone: string; slotMinutes: number }> {
   const settings = await loadSettings();
-  const timeZone = settings.workTimeZone ?? (await lastKnownTimeZone());
-  return {
-    days: settings.workDays,
-    start: settings.workStart,
-    end: settings.workEnd,
-    timeZone,
-    slotMinutes: settings.slotMinutes,
-    bufferMinutes: settings.bufferMinutes,
-  };
-}
-
-/** Free times over the next two weeks; empty while the calendar isn't in use. */
-export async function proposeSlots(now = new Date()): Promise<{ slots: Interval[]; timeZone: string; fromCalendar: boolean }> {
-  const [hours, settings, connection] = await Promise.all([workingHours(), loadSettings(), googleConnection()]);
-  const useCalendar = connection.status === "connected" && connection.canUseCalendar && settings.calendarAvailability;
-  if (!useCalendar) return { slots: [], timeZone: hours.timeZone, fromCalendar: false };
-  const until = new Date(now.getTime() + 14 * 86_400_000);
-  const busy = await busyTimes(settings.calendarId, now, until);
-  return { slots: freeSlots(busy, hours, { from: now, days: 14 }), timeZone: hours.timeZone, fromCalendar: true };
-}
-
-/**
- * Puts an agreed interview on the dashboard (the application's next
- * interview) and, when allowed, in the calendar. Returns the event's link.
- */
-export async function scheduleInterview(applicationId: string, start: Date): Promise<CalendarSync> {
-  const { count } = await prisma.application.updateMany({ where: { id: applicationId }, data: { nextInterviewAt: start } });
-  if (count === 0) throw new GoogleError("unavailable", "That application no longer exists.");
-  return syncInterviewToCalendar(applicationId);
+  return { timeZone: settings.workTimeZone ?? (await lastKnownTimeZone()), slotMinutes: settings.slotMinutes };
 }
 
 /** What happened in the calendar: nothing while it isn't in use, else the event's link while there is one. */

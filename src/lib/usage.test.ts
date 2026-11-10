@@ -37,14 +37,14 @@ describe("usageFigures (#290)", () => {
 
   it("says Not reported (null) when no request's server counted, and how many didn't when some did", () => {
     const { rows } = usageFigures([
-      group("classify-reply", { requests: 3, inputRequests: 0, outputRequests: 0 }),
+      group("regenerate-unit", { requests: 3, inputRequests: 0, outputRequests: 0 }),
       group("score-posting-jev", { requests: 4, inputRequests: 4, input: 8_000, outputRequests: 0 }),
-      group("draft-reply", { requests: 5, inputRequests: 3, input: 900, outputRequests: 3, output: 300 }),
+      group("write-email", { requests: 5, inputRequests: 3, input: 900, outputRequests: 3, output: 300 }),
     ]);
     const row = (task: string) => rows.find((entry) => entry.task === task);
-    expect(row("classify-reply")).toMatchObject({ requests: 3, input: { tokens: null, unreported: 3 }, output: { tokens: null, unreported: 3 }, total: null });
+    expect(row("regenerate-unit")).toMatchObject({ requests: 3, input: { tokens: null, unreported: 3 }, output: { tokens: null, unreported: 3 }, total: null });
     expect(row("score-posting-jev")).toMatchObject({ input: { tokens: 8_000, unreported: 0 }, output: { tokens: null, unreported: 4 }, total: 8_000 });
-    expect(row("draft-reply")).toMatchObject({ input: { tokens: 900, unreported: 2 }, output: { tokens: 300, unreported: 2 }, total: 1_200 });
+    expect(row("write-email")).toMatchObject({ input: { tokens: 900, unreported: 2 }, output: { tokens: 300, unreported: 2 }, total: 1_200 });
   });
 
   it("adds every task up, leaving out tasks this version doesn't know", () => {
