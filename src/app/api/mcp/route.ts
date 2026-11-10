@@ -2,7 +2,7 @@ import { createMcpHandler } from "@modelcontextprotocol/server";
 
 import { connectorSince, mcpUrl, SCOPE, verifyAccessToken } from "@/lib/connector/oauth";
 import { createDossierServer } from "@/lib/connector/tools";
-import { publicOrigin } from "@/lib/google/origin";
+import { publicOrigin } from "@/lib/origin";
 import { logServerError } from "@/lib/log";
 
 // The Claude connector (#221): Dossier as a remote MCP server (Streamable

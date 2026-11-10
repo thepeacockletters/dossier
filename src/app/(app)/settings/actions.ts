@@ -20,7 +20,6 @@ import { cancelJob, startJob } from "@/lib/jobs/runner";
 import { checkForUpdate } from "@/lib/update-check";
 import { redirectProblem } from "@/lib/connector/oauth";
 import { countTailoredDocuments, deleteAllDownloads, zipPdfsJob } from "@/lib/jobs/zip-pdfs";
-import { disconnectGoogle } from "@/lib/google/account";
 import { prisma } from "@/lib/prisma";
 import { jevKey, loadScoringConfig, scoringView } from "@/lib/scoring/config";
 import { SCORERS } from "@/lib/scoring/scorers";
@@ -281,8 +280,6 @@ export const startZippingPdfs = action(z.object({}), async () => {
 export const deleteEverything = action(z.object({ confirm: z.literal("DELETE") }), async () => {
   const unfinished = await prisma.job.findMany({ where: { status: { in: [JobStatus.QUEUED, JobStatus.RUNNING] } }, select: { id: true } });
   for (const job of unfinished) await cancelJob(job.id);
-  // Revokes Dossier's access at Google too (E15-1).
-  await disconnectGoogle().catch(() => {});
 
   await prisma.$transaction(async (tx) => {
     await tx.job.deleteMany();

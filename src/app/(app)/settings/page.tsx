@@ -12,9 +12,8 @@ import { backupsDir } from "@/lib/backups";
 import { mcpUrl } from "@/lib/connector/oauth";
 import { exportFileName } from "@/lib/data-export";
 import { env } from "@/lib/env";
-import { redirectUri } from "@/lib/google/oauth";
-import { googleClientView, googleView, requestOrigin, whenRan } from "@/lib/settings-views";
-import { lastKnownTimeZone, userTimeZone } from "@/lib/time-zone";
+import { requestOrigin, whenRan } from "@/lib/settings-views";
+import { lastKnownTimeZone } from "@/lib/time-zone";
 import { appVersion } from "@/lib/version";
 import { prisma } from "@/lib/prisma";
 import { loadProfileName } from "@/lib/profile-data";
@@ -29,8 +28,6 @@ import { AiBehaviour } from "./ai-behaviour";
 import { AiProviderSection } from "./ai-provider-section";
 import { DataSection } from "./data-section";
 import { DocumentsSection } from "./documents-section";
-import { GoogleSection } from "./google-section";
-import { GoogleNotice } from "./google-notice";
 import { JobSearchSection } from "./job-search-section";
 import { ScoringSection } from "./scoring-section";
 import { AboutSection, type AboutFacts, type UsagePingView } from "./about-section";
@@ -74,22 +71,6 @@ export default async function SettingsPage({ searchParams }: PageProps<"/setting
           countries={COUNTRIES}
           timeZone={await lastKnownTimeZone()}
         />
-      ) : section === "google" ? (
-        <>
-          <GoogleNotice outcome={typeof params.google === "string" ? params.google : null} />
-          <GoogleSection
-            connection={await googleView()}
-            client={await googleClientView()}
-            browserTimeZone={(await userTimeZone()) ?? null}
-            redirectUri={redirectUri(await requestOrigin())}
-            initial={{
-              calendarEvents: settings.calendarEvents,
-              calendarId: settings.calendarId,
-              workTimeZone: settings.workTimeZone,
-              slotMinutes: settings.slotMinutes,
-            }}
-          />
-        </>
       ) : section === "connector" ? (
         <ConnectorSection
           initial={{ on: settings.connectorEnabledAt !== null, redirects: settings.connectorRedirects }}

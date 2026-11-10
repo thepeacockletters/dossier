@@ -28,10 +28,6 @@ export async function register() {
     const { startBackupSchedule } = await import("@/lib/backup-schedule");
     startBackupSchedule();
 
-    // Interviews moved or deleted in Google Calendar, while a Google account is connected (E15-5).
-    const { startCalendarSchedule } = await import("@/lib/google/calendar-schedule");
-    startCalendarSchedule();
-
     // The job agent's daily run, while it's on (E16-4).
     const { startAgentSchedule } = await import("@/lib/agent/schedule");
     startAgentSchedule();

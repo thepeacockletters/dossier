@@ -5,7 +5,6 @@ export const SETTINGS_SECTIONS = [
   { id: "scoring", label: "Scoring" },
   { id: "agent", label: "Job agent" },
   { id: "documents", label: "Documents" },
-  { id: "google", label: "Google" },
   { id: "connector", label: "MCP connector" },
   { id: "data", label: "Your data" },
   { id: "about", label: "About" },

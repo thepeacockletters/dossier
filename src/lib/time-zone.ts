@@ -43,8 +43,8 @@ export function serverTimeZone(): string {
 }
 
 /**
- * The user's time zone where there may be no request, as in the calendar
- * check or a job: this request's browser zone when there is one, else the
+ * The user's time zone where there may be no request, as in the job agent
+ * or a job: this request's browser zone when there is one, else the
  * one the browser last told the server, else the server's own.
  */
 export async function lastKnownTimeZone(): Promise<string> {

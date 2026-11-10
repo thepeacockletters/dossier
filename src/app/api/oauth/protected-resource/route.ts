@@ -1,5 +1,5 @@
 import { connectorSince, protectedResourceMetadata } from "@/lib/connector/oauth";
-import { publicOrigin } from "@/lib/google/origin";
+import { publicOrigin } from "@/lib/origin";
 
 /** /.well-known/oauth-protected-resource (a rewrite in next.config.ts): who guards /api/mcp (#221). */
 export async function GET(request: Request) {

@@ -12,16 +12,12 @@ import { jobRetentionLabel } from "@/lib/settings";
 import { loadScoringConfig, scoringView } from "@/lib/scoring/config";
 import { providerOption } from "@/lib/ai/provider-options";
 import { env } from "@/lib/env";
-import { redirectUri } from "@/lib/google/oauth";
 import { loadSettings } from "@/lib/settings-data";
-import { googleClientView, googleView, requestOrigin } from "@/lib/settings-views";
 import { aiChoice, choiceOf } from "@/lib/setup/ai-choices";
-import { googleAddressProblem } from "@/lib/setup/google";
 import { setupHref, setupStepFromParam } from "@/lib/setup-guide";
 
 import { ProfileImport } from "../../(app)/profile/import/profile-import";
 import { AiStep } from "./ai-step";
-import { GoogleStep } from "./google-step";
 import { JobsStep } from "./jobs-step";
 import { ScoringStep } from "./scoring-step";
 import { SetupFrame } from "./setup-frame";
@@ -32,7 +28,7 @@ export const metadata: Metadata = { title: "Set up Dossier" };
 export default async function WelcomePage({ searchParams }: PageProps<"/welcome">) {
   // The layout checks too; this is the check next to the data (E11-5).
   await verifySession();
-  const [{ step: param, google, job }, settings] = await Promise.all([searchParams, loadSettings()]);
+  const [{ step: param, job }, settings] = await Promise.all([searchParams, loadSettings()]);
   const step = setupStepFromParam(param, settings.setupGuide);
 
   if (step === "start") {
@@ -44,8 +40,7 @@ export default async function WelcomePage({ searchParams }: PageProps<"/welcome"
         lead={
           <>
             <p>
-              A few steps get it ready: an AI to write your resumes and letters, where to look for jobs, how to judge them, your Gmail and
-              calendar, and your profile.
+              A few steps get it ready: an AI to write your resumes and letters, where to look for jobs, how to judge them, and your profile.
             </p>
             <p className="mt-3">
               Each step says where to go, what to click and what to copy back here. You can skip any of them and come back later from Settings.
@@ -63,12 +58,11 @@ export default async function WelcomePage({ searchParams }: PageProps<"/welcome"
   }
 
   if (step === "done") {
-    const [usable, view, jobs, scoring, connection, name] = await Promise.all([
+    const [usable, view, jobs, scoring, name] = await Promise.all([
       isAiUsable(),
       loadAiSettingsView(),
       loadJobSearchConfig(),
       loadScoringConfig(),
-      googleView(),
       loadProfileName(),
     ]);
     const choice = choiceOf(view.provider, view.baseUrl);
@@ -76,7 +70,6 @@ export default async function WelcomePage({ searchParams }: PageProps<"/welcome"
       { label: "AI", value: usable ? (choice ? aiChoice(choice).name : providerOption(view.provider).name) : null, href: "/settings?section=ai" },
       { label: "Job search", value: jobs.source ? SOURCE_INFO[jobs.source].name : null, href: "/settings?section=jobs" },
       { label: "Scoring", value: SCORER_INFO[scoring.scorer].name, href: "/settings?section=scoring" },
-      { label: "Gmail and Calendar", value: connection.status === "connected" ? connection.email : null, href: "/settings?section=google" },
       { label: "Profile", value: name.trim() || null, href: "/profile" },
     ];
     return (
@@ -159,27 +152,6 @@ export default async function WelcomePage({ searchParams }: PageProps<"/welcome"
         lead="Score in Find jobs and the job agent say how well a posting fits your profile, so you can see the good ones first. Your resumes and letters are always written by your AI."
       >
         <ScoringStep initial={view} />
-      </SetupFrame>
-    );
-  }
-
-  if (step === "google") {
-    const [connection, client, origin] = await Promise.all([googleView(), googleClientView(), requestOrigin()]);
-    const uri = redirectUri(origin);
-    return (
-      <SetupFrame
-        step="google"
-        title="Gmail and Calendar"
-        complete={connection.status === "connected"}
-        lead="Optional, and the longest step. With your Google account connected, Dossier sends applications from your Gmail and keeps your interviews in your calendar. It takes a few pages in Google Cloud, done once."
-      >
-        <GoogleStep
-          connection={connection}
-          client={client}
-          redirectUri={uri}
-          addressProblem={googleAddressProblem(uri)}
-          outcome={typeof google === "string" ? google : null}
-        />
       </SetupFrame>
     );
   }

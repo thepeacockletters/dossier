@@ -35,9 +35,9 @@ import { appVersion } from "@/lib/version";
 // profile, custom themes, settings and applications with their history,
 // documents, chat and notes, the postings kept from Find jobs (E14-9) and
 // the job agent's candidates (E16), so its dedupe survives a restore.
-// IDs are kept, so an import restores every link. Jobs, sign-in throttling,
-// built-in themes and the Google account stay behind: they belong to the
-// server, not the user's data.
+// IDs are kept, so an import restores every link. Jobs, sign-in throttling
+// and built-in themes stay behind: they belong to the server, not the user's
+// data.
 
 export const EXPORT_FORMAT = "dossier-export";
 /** Bump when the file's shape changes; imports refuse versions they don't know. 2 added Find jobs' postings and keys (E14-9), 3 projects (PRO-13) and the job agent (E16), 4 facts (PRO-14, APP-15), 5 publications (#218), the profile photo's theme and application options (#224) and Startups (#222), 6 the line about a role's company (#257), 7 skill groups (#280), 8 certifications (#293) and volunteering (#294), 9 resume section order (#297), custom sections (#298) and what sent applications were sent with (#299), and the board's order (public issue 60), 10 the tailored resume's score (#370), 11 the job agent's recurring searches and which found each candidate (public PR 61). */
@@ -49,7 +49,7 @@ export const EXPORT_SCHEMA_VERSIONS: readonly number[] = [1, 2, 3, 4, 5, 6, 7, 8
 const API_KEY_SETTING = "apiKeyEnc";
 /** The settings that hold encrypted keys, which only this server can read: never exported as they are. */
 export const SECRET_SETTINGS: readonly string[] = [API_KEY_SETTING, "jsearchKeyEnc", "adzunaKeyEnc", "typesafeKeyEnc"];
-/** The settings that belong to this install rather than its data (the usage ping's and its consent, the update check's, the Google client and the browser's time zone): never exported, and kept by an import. */
+/** The settings that belong to this install rather than its data (the usage ping's and its consent, the update check's and the browser's time zone): never exported, and kept by an import. */
 export const INSTALL_SETTINGS: readonly string[] = [
   "usagePingId",
   "usagePingDay",
@@ -66,8 +66,6 @@ export const INSTALL_SETTINGS: readonly string[] = [
   "updateDismissed",
   "announcementFeed",
   "announcementsDismissed",
-  "googleClientId",
-  "googleClientSecretEnc",
   "browserTimeZone",
   // An import must never open the MCP connector's addresses on this server (#221), or let another app sign in (#281).
   "connectorEnabledAt",
@@ -421,8 +419,6 @@ export async function buildExport(
       tx.setting.findMany({ select: { key: true, value: true }, orderBy: { key: "asc" } }),
       tx.application.findMany({
         orderBy: { createdAt: "asc" },
-        // The Gmail thread belongs to the mailbox, not the data (E15-2).
-        omit: { emailThreadId: true, interviewEventId: true, interviewCalendarId: true },
         include: {
           events: { omit: { applicationId: true }, orderBy: { at: "asc" } },
           documents: {

@@ -3,7 +3,7 @@ import { z } from "zod";
 // The setup guide (E21): a few steps at /welcome that get a fresh install
 // ready, for people who have never seen an API key.
 
-export const SETUP_STEPS = ["start", "ai", "jobs", "scoring", "google", "profile", "done"] as const;
+export const SETUP_STEPS = ["start", "ai", "jobs", "scoring", "profile", "done"] as const;
 export type SetupStep = (typeof SETUP_STEPS)[number];
 
 /** The steps in the guide's rail; Start and Done are the ends around them. */
@@ -11,7 +11,6 @@ export const SETUP_RAIL: readonly { step: Exclude<SetupStep, "start" | "done">; 
   { step: "ai", name: "AI" },
   { step: "jobs", name: "Job search" },
   { step: "scoring", name: "Scoring" },
-  { step: "google", name: "Gmail and Calendar" },
   { step: "profile", name: "Profile" },
 ];
 

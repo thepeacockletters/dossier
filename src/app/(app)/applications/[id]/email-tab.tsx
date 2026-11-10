@@ -11,7 +11,6 @@ import { emailParts, mailtoHref } from "@/lib/application-email";
 import { cn } from "@/lib/cn";
 import { copyText } from "@/lib/copy-text";
 
-import { SendWithGmail, type GmailSender } from "./send-with-gmail";
 import { aboutWords } from "./tabs";
 
 /** The PDFs to attach, by their file names; null when the application doesn't have one. */
@@ -35,7 +34,6 @@ export function EmailTab({
   writing,
   onWrite,
   attachments,
-  gmail,
 }: {
   applicationId: string;
   /** The email's units; null until it's written. */
@@ -52,8 +50,6 @@ export function EmailTab({
   /** "Write the email" and "Rewrite". */
   onWrite: () => void;
   attachments: Attachments;
-  /** Sending with Gmail (E15-2): who it sends from, and whether it went out that way before. */
-  gmail?: { sender: GmailSender; sentBefore: boolean };
 }) {
   if (!units) {
     return (
@@ -123,17 +119,7 @@ export function EmailTab({
       </article>
 
       <div className="flex w-full max-w-[680px] flex-wrap items-center gap-3">
-        {gmail && (
-          <SendWithGmail
-            applicationId={applicationId}
-            sender={gmail.sender}
-            to={to}
-            subject={subject}
-            attachments={[attachments.resume, attachments.letter].filter((name): name is string => name !== null)}
-            sentBefore={gmail.sentBefore}
-          />
-        )}
-        <Button variant={gmail?.sender.from ? "secondary" : "primary"} onClick={() => void copy(body, "message")}>
+        <Button variant="primary" onClick={() => void copy(body, "message")}>
           Copy message
         </Button>
         {/* Mail apps can't take attachments from a link: the PDFs are attached by hand. */}

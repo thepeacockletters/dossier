@@ -12,9 +12,6 @@ const SIGNED_OUT_ACTIONS = new Map([
 ]);
 const OPEN_ROUTES = new Set([
   "src/app/api/health/route.ts", // for health checks; says nothing private
-  // Google's redirect comes from Google's site, so route()'s same-origin check
-  // would refuse it; it checks the session and its signed state itself (E15-1).
-  "src/app/api/google/callback/route.ts",
   // The Claude connector (#221) is called by Claude, not the browser: it
   // checks its OAuth token instead, and answers 404 while it's off.
   "src/app/api/mcp/route.ts",
@@ -64,12 +61,6 @@ describe("session checks (E11-5)", () => {
         !/await (verifySession|verifyPrintAccess)\(/.test(read(file)),
     );
     expect(unchecked).toEqual([]);
-  });
-
-  it("checks the session in Google's callback itself", () => {
-    const source = read("src/app/api/google/callback/route.ts");
-    expect(source).toContain("await getSession()");
-    expect(source).toContain("await verifyState(");
   });
 
   it("checks the token and the switch in the Claude connector itself (#221)", () => {

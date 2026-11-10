@@ -38,10 +38,7 @@ services:
       # Defaults for Settings → Scoring: ai or jev (Jev by TypeSafe, with its key).
       DOSSIER_SCORER: ${DOSSIER_SCORER:-}
       DOSSIER_TYPESAFE_KEY: ${DOSSIER_TYPESAFE_KEY:-}
-      # Gmail and Calendar: a Google OAuth client (or enter it in Settings → Google).
-      DOSSIER_GOOGLE_CLIENT_ID: ${DOSSIER_GOOGLE_CLIENT_ID:-}
-      DOSSIER_GOOGLE_CLIENT_SECRET: ${DOSSIER_GOOGLE_CLIENT_SECRET:-}
-      # The address Dossier is reached at, for Google's redirect.
+      # The address Dossier is reached at, for the MCP connector's addresses.
       DOSSIER_PUBLIC_URL: ${DOSSIER_PUBLIC_URL:-}
     # Only on the server itself: put a reverse proxy with HTTPS in front.
     ports:

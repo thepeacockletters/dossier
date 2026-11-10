@@ -48,7 +48,7 @@ export function PeriodFilter({
           value={shown}
           onValueChange={(next) => {
             if (remember) void rememberDashboardPeriod({ period: next });
-            // The calendar's month stays.
+            // Other parameters stay.
             const query = new URLSearchParams(params);
             query.set("period", next);
             startTransition(() => {

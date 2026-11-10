@@ -31,7 +31,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
   // The day's usage ping and update check, if they haven't run yet: after the page, so they never slow one down.
   after(notePageLoad);
   after(checkForUpdatesDaily);
-  // The browser's zone, for work that runs without a request (the job agent, the calendar).
+  // The browser's zone, for work that runs without a request (the job agent).
   const zone = await userTimeZone();
   after(() => rememberBrowserTimeZone(zone));
 

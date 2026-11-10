@@ -39,16 +39,16 @@ describe("the dashboard's period filter (E9-8)", () => {
     expect(router.replace).toHaveBeenCalledWith("/?period=30d", { scroll: false });
   });
 
-  it("keeps the calendar's month", async () => {
+  it("keeps the other parameters", async () => {
     const user = userEvent.setup();
-    params.current = new URLSearchParams("date=2026-11-01&period=all");
+    params.current = new URLSearchParams("view=table&period=all");
     render(
       <PeriodFilter period="all">
         <p>The figures</p>
       </PeriodFilter>,
     );
     await user.click(screen.getByRole("radio", { name: "Last 90 days" }));
-    expect(router.replace).toHaveBeenCalledWith("/?date=2026-11-01&period=90d", { scroll: false });
+    expect(router.replace).toHaveBeenCalledWith("/?view=table&period=90d", { scroll: false });
   });
 
   it("filters another screen without touching the dashboard's choice, as on Usage (#290)", async () => {

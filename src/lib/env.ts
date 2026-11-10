@@ -147,13 +147,8 @@ const schema = z.object({
   ),
   // Never echo the value: it's an API key.
   DOSSIER_TYPESAFE_KEY: optional(z.string().trim()),
-  // Google sign-in for Gmail and Calendar (E15-1): an OAuth client of type
-  // "Web application". Settings → Google can save one instead, which wins.
-  // Never echo the secret.
-  DOSSIER_GOOGLE_CLIENT_ID: optional(z.string().trim()),
-  DOSSIER_GOOGLE_CLIENT_SECRET: optional(z.string().trim()),
   // The address Dossier is reached at, e.g. https://dossier.example.com, for
-  // Google's redirect. Defaults to the address of the request that connects.
+  // the MCP connector's addresses. Defaults to the address of the request.
   DOSSIER_PUBLIC_URL: optional(
     z.url({ protocol: /^https?$/, error: "DOSSIER_PUBLIC_URL must be an http:// or https:// URL." }).transform((url) => url.replace(/\/+$/, "")),
   ),

@@ -13,9 +13,9 @@ describe("the setup guide (E21)", () => {
 
   it("goes on where it was left, unless a step is asked for", () => {
     expect(setupStepFromParam(undefined, null)).toBe("start");
-    expect(setupStepFromParam(undefined, { step: "google", finished: false })).toBe("google");
-    expect(setupStepFromParam(undefined, { step: "google", finished: true })).toBe("start");
-    expect(setupStepFromParam("scoring", { step: "google", finished: false })).toBe("scoring");
+    expect(setupStepFromParam(undefined, { step: "scoring", finished: false })).toBe("scoring");
+    expect(setupStepFromParam(undefined, { step: "scoring", finished: true })).toBe("start");
+    expect(setupStepFromParam("profile", { step: "scoring", finished: false })).toBe("profile");
     expect(setupStepFromParam("nowhere", null)).toBe("start");
     expect(setupStepFromParam(["ai", "jobs"], null)).toBe("start");
   });

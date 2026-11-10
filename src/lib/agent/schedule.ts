@@ -1,7 +1,7 @@
 import "server-only";
 
 import { AgentCandidateStatus } from "@/generated/prisma/enums";
-import { addDays, dayOf } from "@/lib/calendar-view";
+import { addDays, dayOf } from "@/lib/days";
 import { zonedTime } from "@/lib/zoned-time";
 import { findUnfinishedJobs, startJob } from "@/lib/jobs/runner";
 import { logServerError } from "@/lib/log";
@@ -15,7 +15,7 @@ import { nextSourceBudgetAt, runLimitProblem } from "./runs";
 import { listAgentSearches } from "./searches";
 
 // The job agent's daily run (E16-4): a timer in this process, like the
-// nightly backups and the calendar check, so it's only right with one instance.
+// nightly backups, so it's only right with one instance.
 // Every 15 minutes it starts the day's run once the chosen hour has come, in
 // the user's time zone, not the server's (usually UTC in Docker).
 

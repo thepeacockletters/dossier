@@ -64,7 +64,6 @@ import { WriteMissingDocument } from "./write-missing-document";
 import { ApplicationHeader } from "./application-header";
 import { ApplicationMenu } from "./application-menu";
 import { EmailTab, type Attachments } from "./email-tab";
-import type { GmailSender } from "./send-with-gmail";
 
 import { JobWatcher } from "./job-watcher";
 import { NotesTab } from "./notes-tab";
@@ -159,8 +158,6 @@ export type ApplicationViewProps = {
   writingDocuments?: { resume: string | null; letter: string | null };
   /** The PDFs to attach to the email. */
   attachments: Attachments;
-  /** Sending through Gmail (E15-2), and the application's mail (E15-3). */
-  gmail?: { sender: GmailSender; sentBefore: boolean };
   profile: ProfileData;
   paper: PaperSize;
   dateFormat: DateFormat;
@@ -212,7 +209,6 @@ export function ApplicationView({
   writingEmail,
   writingDocuments = { resume: null, letter: null },
   attachments,
-  gmail,
   profile,
   paper,
   dateFormat,
@@ -813,7 +809,6 @@ export function ApplicationView({
             writing={emailJob !== null}
             onWrite={() => void writeEmail()}
             attachments={attachments}
-            gmail={gmail}
           />
         </TabsContent>
 

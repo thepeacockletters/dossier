@@ -3,23 +3,10 @@ import "server-only";
 import { headers } from "next/headers";
 
 import { formatShortDate } from "@/lib/dates";
-import { googleConnection } from "@/lib/google/account";
-import { loadGoogleClientConfig } from "@/lib/google/oauth";
 
 // What Settings and the setup guide (E21) both show.
 
-/** The connection as the Google section shows it: never a token. */
-export async function googleView() {
-  return googleConnection();
-}
-
-/** The OAuth client as the Google section shows it: the ID, never the secret. */
-export async function googleClientView() {
-  const { id, idState, secretState } = await loadGoogleClientConfig();
-  return { id, idState, secretState };
-}
-
-/** The address this page was reached at, for the redirect URI to register. */
+/** The address this page was reached at, for the MCP connector's address. */
 export async function requestOrigin(): Promise<string> {
   const requestHeaders = await headers();
   const host = requestHeaders.get("x-forwarded-host")?.split(",")[0]?.trim() || requestHeaders.get("host") || "localhost:3000";

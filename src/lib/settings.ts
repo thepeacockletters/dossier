@@ -201,20 +201,6 @@ export const settingsSchema = z.object({
   // leave them out (INSTALL_SETTINGS).
   announcementFeed: json(announcementFeedSchema).nullable().catch(null),
   announcementsDismissed: stringList.catch([]),
-  // Gmail and Calendar (E15). Off until the Google account is connected.
-  // The OAuth client, entered in Settings → Google. Null means "not set in the
-  // app": DOSSIER_GOOGLE_CLIENT_ID and DOSSIER_GOOGLE_CLIENT_SECRET decide.
-  googleClientId: z.string().nullable().catch(null),
-  /** Encrypted like the API keys (GOOGLE_CLIENT_SECRET); never sent to the client. */
-  googleClientSecretEnc: z.string().nullable().catch(null),
-  /** Add interviews to the calendar. */
-  calendarEvents: flag(true),
-  /** The calendar to read and write; "primary" is the account's own. */
-  calendarId: z.string().catch("primary"),
-  /** The time zone for interviews; null means the browser's. */
-  workTimeZone: z.string().nullable().catch(null),
-  /** Interview length, in minutes. */
-  slotMinutes: z.coerce.number().int().min(15).max(240).catch(45),
   // The usage ping (usage-ping.ts): this install's random ID, made by its
   // first ping, and the UTC day of the last one. They belong to the install,
   // not its data, so exports leave them out (INSTALL_SETTINGS).
@@ -234,7 +220,7 @@ export const settingsSchema = z.object({
   /** Other MCP apps' callback addresses, allowed like Claude's (#281). The install's too: an import must never add one. */
   connectorRedirects: stringList.catch([]),
   // The browser's time zone as it last told the server, for work done
-  // without a request, such as the calendar check (time-zone.ts). It belongs
+  // without a request, such as the job agent's (time-zone.ts). It belongs
   // to the install, not its data, so exports leave it out (INSTALL_SETTINGS).
   browserTimeZone: z.string().nullable().catch(null),
 });

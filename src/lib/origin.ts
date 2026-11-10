@@ -3,7 +3,7 @@ import { env } from "@/lib/env";
 /**
  * The address the browser reaches Dossier at: DOSSIER_PUBLIC_URL, else the
  * forwarded host and protocol behind a reverse proxy, else the request's own.
- * Google's redirect and the Claude connector's addresses (#221) use it.
+ * The Claude connector's addresses (#221) use it.
  */
 export function publicOrigin(request: Request): string {
   if (env.DOSSIER_PUBLIC_URL) return env.DOSSIER_PUBLIC_URL;

@@ -1,5 +1,5 @@
 import { authorizationServerMetadata, connectorSince } from "@/lib/connector/oauth";
-import { publicOrigin } from "@/lib/google/origin";
+import { publicOrigin } from "@/lib/origin";
 
 /** /.well-known/oauth-authorization-server (a rewrite in next.config.ts): how Claude signs in (#221). */
 export async function GET(request: Request) {
